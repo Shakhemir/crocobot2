@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     LOG_FILE: str
     LOG_LEVEL: str
     WORDS_FILE: str
+    STATE_SAVE_DIR: str
 
     GAME_TIME: int
     EXCLUSIVE_TIME: int

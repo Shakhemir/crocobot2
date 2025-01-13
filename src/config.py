@@ -56,14 +56,20 @@ async def init_telegram_bot():
 bot, bot_username, bot_title = asyncio.run(init_telegram_bot())
 
 
-# Настройка логирования
-file_handler = logging.handlers.RotatingFileHandler(
-    settings.LOG_FILE, maxBytes=1024 * 1024, backupCount=10, encoding="utf-8"
-)
-file_formatter = logging.Formatter("%(asctime)s :: %(message)s")
-file_handler.setFormatter(file_formatter)
-file_handler.setLevel(settings.LOG_LEVEL)
-logger = logging.getLogger(__name__)
-logger.setLevel(settings.LOG_LEVEL)
-logger.addHandler(file_handler)
-logger.info("Start")
+def get_logger():
+    # Настройка логирования
+    file_handler = logging.handlers.RotatingFileHandler(
+        settings.LOG_FILE, maxBytes=1024 * 1024, backupCount=10, encoding="utf-8"
+    )
+    file_formatter = logging.Formatter("%(asctime)s :: %(message)s")
+    file_handler.setFormatter(file_formatter)
+    file_handler.setLevel(settings.LOG_LEVEL)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(settings.LOG_LEVEL)
+    logger.addHandler(file_handler)
+    logger.info("Start")
+
+    return logger
+
+
+logger = get_logger()
