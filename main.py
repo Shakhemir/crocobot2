@@ -22,7 +22,7 @@ async def start_game(message: Message):
 async def get_game(message: Message):
     game = games.get(message.chat.id)
     if game is None:
-        game = Game(message)
+        game = Game(message, get_random_word, save_game)
         games[message.chat.id] = game
         await save_game(game)
     return game
@@ -33,8 +33,9 @@ async def start_game(message: Message):
     """Старт игры"""
     chat_id = message.chat.id
     chat_game = await get_game(message)
-    await chat_game.start_game(message, get_random_word, end_game)
-    await save_game(chat_game)
+    if chat_game:
+        return await bot.send_message(chat_id, **ui.get_game_already_started_message())
+    await chat_game.start_game(message, end_game)
     return await bot.send_message(
         chat_id, **ui.get_start_game_message(message.from_user.full_name)
     )
@@ -51,6 +52,7 @@ async def end_game(game):
 async def check_game(message: Message):
     """Тестируем"""
     chat_game = await get_game(message)
+    print("check_game", chat_game)
     active = "🟢" if chat_game.active else "🔴"
     if gt := chat_game.game_timer:
         interval, time_left, time_remain = gt.interval, gt.time_left, gt.time_remain
@@ -64,9 +66,17 @@ async def check_game(message: Message):
     )
 
 
+@bot.message_handler(content_types=["text"], func=is_group_command)
+async def chat_messages(message: Message):
+    """Обработчик сообщений в чатах"""
+    chat_game = await get_game(message)
+
+
 async def start_bot():
     global games
-    games = await load_games(end_game_func=end_game)
+    games = await load_games(
+        word_gen_func=get_random_word, save_game_func=save_game, end_game_func=end_game
+    )
     print(f"{games=}")
     await bot.infinity_polling()
 

@@ -54,8 +54,11 @@ class Timer:
 
 
 class Game:
-    def __init__(self, message: Message = None):
-        self.func_word_gen = None  # Функция генерации случайного слова
+    def __init__(
+        self, message: Message = None, word_gen_func=None, save_game_func=None, **kwargs
+    ):
+        self.word_gen_func = word_gen_func  # Функция генерации случайного слова
+        self.save_game_func = save_game_func  # Функция сохранения состояния игры
 
         # Информация о чате, где проходит игра
         self.chat_id = self.chat_title = None
@@ -63,7 +66,7 @@ class Game:
             self.chat_id = message.chat.id
             self.chat_title = message.chat.title
 
-        self.active: bool | None = None  # Активна ли игра
+        self.active = False  # Активна ли игра
         self.used_words = set()  # Множество угаданных слов
         self.game_timer: Timer | None = None  # Таймер игры
         self.current_leader: int | None = None  # Ведущий
@@ -78,27 +81,37 @@ class Game:
         )
         self.players: int | None = None  # Сколько игроков угадывали
 
-    async def start_game(self, message, word_gen_func, end_game_func):
+    async def save_game(self):
+        """Сохранение состояния игры"""
+        if self.save_game_func:
+            await self.save_game_func(self)
+
+    async def start_game(self, message, end_game_func):
         """Запуск игры"""
-        self.func_word_gen = word_gen_func
         self.active = True
+
         # Назначаем нового ведущего
         self.current_leader = message.from_user.id
         self.leader_name = message.from_user.full_name
         self.define_new_word()
+
         # Запускаем таймер игры
         if self.game_timer:
             self.game_timer.cancel()
         self.game_timer = Timer(settings.GAME_TIME, end_game_func, (self,))
 
+        # Сохраняем игру
+        await self.save_game()
+
     def define_new_word(self):
-        self.current_word = self.func_word_gen(self)
+        self.current_word = self.word_gen_func(self)
 
     def save_state(self):
         """Сохраняет состояние игры в словарь."""
-        state = self.__dict__.copy()
-        # Удаляем несериализуемые объекты
-        state["bot"] = None
+        # Составляем словарь только из сериализуемых объектов
+        state = {
+            key: value for key, value in self.__dict__.items() if not callable(value)
+        }
         if self.game_timer is not None:
             state["game_timer"] = {
                 "interval": self.game_timer.interval,
@@ -114,7 +127,7 @@ class Game:
     @classmethod
     async def load_state(cls, state, **kwargs):
         """Восстанавливает экземпляр игры из словаря состояния."""
-        obj = cls()
+        obj = cls(**kwargs)
         for key, value in state.items():
             if key in ("game_timer", "exclusive_timer"):
                 continue
@@ -129,7 +142,7 @@ class Game:
                 (obj,),
                 end_time=timer_state["end_time"],
             )
-            if obj.active:
+            if obj.active and obj.game_timer is None:
                 await end_game_func(obj)
         return obj
 
