@@ -1,6 +1,6 @@
 """Разные вспомоганательные утилиты"""
 
-import asyncio
+import re
 import os
 import pickle
 import aiofiles
@@ -10,9 +10,18 @@ from src.config import logger, settings
 
 
 def is_group_command(message):
-    return message.chat.type in ["group", "supergroup"] and message.text.endswith(
-        f"@{bot_username}"
-    )
+    if message.chat.type in ["group", "supergroup"]:
+        if (
+            message.reply_to_message
+            and message.reply_to_message.from_user.username == bot_username
+        ):
+            return True
+        if message.text.endswith(f"@{bot_username}"):
+            return True
+
+
+def is_group_message(message):
+    return message.chat.type in ["group", "supergroup"]
 
 
 async def save_game(game: Game):
@@ -39,3 +48,35 @@ async def load_games(**kwargs):
                 loaded_game_states[chat_id] = restored_game
 
     return loaded_game_states
+
+
+async def check_user_answer(answer: str, game: Game):
+    """
+    Проверка ответов пользователей в чате:
+
+    :param answer: текст сообщения
+    :param game: текущая игра
+    :return:
+        -1 - повтор ответа, нужно удалить
+        True - угадал слово
+        None - не угадал
+    """
+    print("check_user_answer", answer, game.leader_name)
+    user_answer = answer.lower().replace("ё", "е")
+    if user_answer in game.answers_set:
+        return -1
+    game.answers_set.add(user_answer)
+
+    normalized_current_word = re.sub(
+        r"[^а-яa-z]+", " ", game.current_word.replace("ё", "е"), flags=re.IGNORECASE
+    )
+    set_of_correct_words = set(word.lower() for word in normalized_current_word.split())
+    normalized_user_answer = re.sub(
+        r"[^а-яa-z]+", " ", user_answer, flags=re.IGNORECASE
+    )
+    set_of_words_in_message = set(word for word in normalized_user_answer.split())
+
+    if not (set_of_correct_words - set_of_words_in_message):
+        # Угадал слово
+        await game.add_current_word_to_used()
+        return True

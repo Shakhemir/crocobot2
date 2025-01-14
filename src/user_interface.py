@@ -1,9 +1,7 @@
 from telebot import util
 from telebot.types import (
-    KeyboardButton,
-    ReplyKeyboardMarkup,
     InlineKeyboardMarkup,
-    InlineKeyboardButton,
+    InlineKeyboardButton
 )
 
 
@@ -36,11 +34,21 @@ leader_markup = InlineKeyboardMarkup()
 view_word_btn = InlineKeyboardButton("🔎 Посмотреть слово", callback_data="view_word")
 change_word_btn = InlineKeyboardButton("🔄 Сменить слово", callback_data="change_word")
 leader_markup.add(view_word_btn, change_word_btn)
-# leader_markup.add(change_word_btn)
 
 
 def get_start_game_message(user_name):
+    user_name = util.escape(user_name)
     text = f"Игра начинается! <b>{user_name}</b> объясняет слово ⚡️\n\nВедущий, выберите действие:"
+    return dict(
+        text=text,
+        parse_mode="html",
+        reply_markup=leader_markup,
+    )
+
+
+def get_lead_game_message(user_name):
+    user_name = util.escape(user_name)
+    text = f"<b>{user_name}</b> объясняет слово ⚡️\n\nВедущий, выберите действие:"
     return dict(
         text=text,
         parse_mode="html",
@@ -58,3 +66,18 @@ def get_end_game_message():
     return dict(
         text=text,
     )
+
+
+# Кнопка для выбора ведущего
+make_lead_markup = InlineKeyboardMarkup()
+want_to_lead_btn = InlineKeyboardButton(
+    "Стать ведущим 🐳", callback_data="want_to_lead"
+)
+make_lead_markup.add(want_to_lead_btn)
+
+
+def get_new_game_message(user, current_word):
+    user_link = util.user_link(user)
+    print(f"{user_link=}")
+    text = f"😜 {user_link} отгадал(-а) слово <b>{current_word}</b>!\n\nКто хочет быть ведущим?"
+    return dict(text=text, reply_markup=make_lead_markup, parse_mode="HTML")

@@ -57,8 +57,8 @@ class Game:
     def __init__(
         self, message: Message = None, word_gen_func=None, save_game_func=None, **kwargs
     ):
-        self.word_gen_func = word_gen_func  # Функция генерации случайного слова
-        self.save_game_func = save_game_func  # Функция сохранения состояния игры
+        self._word_gen_func = word_gen_func  # Функция генерации случайного слова
+        self._save_game_func = save_game_func  # Функция сохранения состояния игры
 
         # Информация о чате, где проходит игра
         self.chat_id = self.chat_title = None
@@ -72,7 +72,7 @@ class Game:
         self.current_leader: int | None = None  # Ведущий
         self.leader_name: str | None = None  # Имя ведущего
         self.current_word: str | None = None  # Загаданное слово
-        self.answers_set: set | None = None  # Множество использованных ответов
+        self.answers_set = set()  # Множество использованных ответов
         self.exclusive_user: int | None = (
             None  # Угадавший игрок, имеющий исключительное право стать ведущим
         )
@@ -83,28 +83,45 @@ class Game:
 
     async def save_game(self):
         """Сохранение состояния игры"""
-        if self.save_game_func:
-            await self.save_game_func(self)
+        if self._save_game_func:
+            await self._save_game_func(self)
 
-    async def start_game(self, message, end_game_func):
+    async def start_game(self, user, end_game_func):
         """Запуск игры"""
         self.active = True
 
         # Назначаем нового ведущего
-        self.current_leader = message.from_user.id
-        self.leader_name = message.from_user.full_name
+        self.current_leader = user.id
+        self.leader_name = user.full_name
         self.define_new_word()
 
         # Запускаем таймер игры
         if self.game_timer:
             self.game_timer.cancel()
-        self.game_timer = Timer(settings.GAME_TIME, end_game_func, (self,))
+        self.game_timer = Timer(settings.GAME_TIME, self.end_game, (end_game_func,))
 
         # Сохраняем игру
         await self.save_game()
 
     def define_new_word(self):
-        self.current_word = self.word_gen_func(self)
+        self.current_word = self._word_gen_func(self)
+        self.answers_set.clear()
+
+    async def add_current_word_to_used(self):
+        """Слово угадали"""
+        self.active = False
+        self.game_timer.cancel()
+        self.used_words.add(self.current_word)
+        self.answers_set.clear()
+        await self.save_game()
+
+    async def end_game(self, end_game_func):
+        """Игра закончилась по истечении времени, слово не угадали"""
+        self.active = False
+        self.game_timer = None
+        self.answers_set.clear()
+        await end_game_func(self)
+        await self.save_game()
 
     def save_state(self):
         """Сохраняет состояние игры в словарь."""
@@ -150,10 +167,13 @@ class Game:
         return self.active
 
     def __str__(self):
+        state = {
+            key: value for key, value in self.__dict__.items() if not callable(value)
+        }
         try:
-            return json.dumps(self.__dict__, indent=4, ensure_ascii=False)
+            return json.dumps(state, indent=4, ensure_ascii=False)
         except:
-            return str(self.__dict__)
+            return str(state)
 
     def __repr__(self):
         return f"Game<'{self.chat_title}', {self.chat_id}>"
