@@ -11,6 +11,7 @@ from src.utils import (
     check_user_answer,
 )
 from app.words_generator import get_random_word
+from app.statistics import inc_user_stat
 
 
 games: dict  # Словарь с активными играми в чатах
@@ -88,6 +89,7 @@ async def chat_messages(message: Message):
         except:
             pass
     elif result:  # Угадал слово
+        await inc_user_stat(chat_game, message.from_user)  # Изменяем статистику
         await bot.send_message(
             chat_id,
             **ui.get_new_game_message(message.from_user, chat_game.current_word),
