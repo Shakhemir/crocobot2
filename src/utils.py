@@ -62,13 +62,16 @@ async def check_user_answer(answer: str, game: Game):
         None - не угадал
     """
     print("check_user_answer", answer, game.leader_name)
-    user_answer = answer.lower().replace("ё", "е")
+    user_answer = answer.lower().replace("ё", "е").replace("й", "и")
     if user_answer in game.answers_set:
         return -1
     game.answers_set.add(user_answer)
 
     normalized_current_word = re.sub(
-        r"[^а-яa-z]+", " ", game.current_word.replace("ё", "е"), flags=re.IGNORECASE
+        r"[^а-яa-z]+",
+        " ",
+        game.current_word.replace("ё", "е").replace("й", "и"),
+        flags=re.IGNORECASE,
     )
     set_of_correct_words = set(word.lower() for word in normalized_current_word.split())
     normalized_user_answer = re.sub(
