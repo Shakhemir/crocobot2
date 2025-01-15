@@ -1,8 +1,5 @@
 from telebot import util
-from telebot.types import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton
-)
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def get_welcome_message(bot_title):

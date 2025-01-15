@@ -81,8 +81,7 @@ async def chat_messages(message: Message):
     # Если игра не активна либо пишет ведущий, то выходим
     if not chat_game or message.from_user.id == chat_game.current_leader:
         return
-    result = await check_user_answer(message.text, chat_game)  # Проверяем ответ из чата
-    print("result", result)
+    result = await check_user_answer(message, chat_game)  # Проверяем ответ из чата
     if result == -1:  # Повторный ответ
         try:
             await bot.delete_message(chat_id, message.message_id)
@@ -98,10 +97,16 @@ async def chat_messages(message: Message):
 
 @bot.callback_query_handler(func=lambda call: True)
 async def callback_handler(call: CallbackQuery):
-    print(f"{call.data=}")
     chat_id = call.message.chat.id
     chat_game = await get_game(call.message)
     if call.data == "want_to_lead" and not chat_game:
+        if chat_game.exclusive_user and call.from_user.id != chat_game.exclusive_user:
+            time_remain = chat_game.exclusive_timer.time_remain
+            return await bot.answer_callback_query(
+                call.id,
+                f"Вы станете ведущим, если отгадавший не займет эту роль в течение {time_remain} секунд",
+                show_alert=True,
+            )
         await chat_game.start_game(call.from_user, end_game)
         await bot.answer_callback_query(
             call.id, text=f"Ваше слово: {chat_game.current_word}", show_alert=True

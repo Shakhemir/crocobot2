@@ -1,7 +1,7 @@
 import asyncio
 import json
 import time
-from telebot.types import Message
+from telebot.types import Message, User
 from src.config import settings
 
 
@@ -31,7 +31,10 @@ class Timer:
 
     async def _job(self):
         await asyncio.sleep(self.timeout)
-        await self._callback(*self._args, **self._kwargs)
+        if asyncio.iscoroutine(self._callback()):
+            await self._callback(*self._args, **self._kwargs)
+        else:
+            self._callback(*self._args, **self._kwargs)
 
     def cancel(self):
         self._task.cancel()
@@ -89,6 +92,8 @@ class Game:
     async def start_game(self, user, end_game_func):
         """Запуск игры"""
         self.active = True
+        if self.exclusive_timer:
+            self.exclusive_timer.cancel()
 
         # Назначаем нового ведущего
         self.current_leader = user.id
@@ -107,13 +112,18 @@ class Game:
         self.current_word = self._word_gen_func(self)
         self.answers_set.clear()
 
-    async def add_current_word_to_used(self):
+    async def add_current_word_to_used(self, user_id):
         """Слово угадали"""
         self.active = False
         self.game_timer.cancel()
+        self.exclusive_timer = Timer(settings.EXCLUSIVE_TIME, self.end_exclusive)
+        self.exclusive_user = user_id
         self.used_words.add(self.current_word)
         self.answers_set.clear()
         await self.save_game()
+
+    def end_exclusive(self):
+        self.exclusive_user = None
 
     async def end_game(self, end_game_func):
         """Игра закончилась по истечении времени, слово не угадали"""

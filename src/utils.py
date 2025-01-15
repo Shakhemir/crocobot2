@@ -4,12 +4,13 @@ import re
 import os
 import pickle
 import aiofiles
+from telebot.types import Message
 from src.game import Game
 from src.config import bot, bot_username
 from src.config import logger, settings
 
 
-def is_group_command(message):
+def is_group_command(message: Message):
     if message.chat.type in ["group", "supergroup"]:
         if (
             message.reply_to_message
@@ -20,7 +21,7 @@ def is_group_command(message):
             return True
 
 
-def is_group_message(message):
+def is_group_message(message: Message):
     return message.chat.type in ["group", "supergroup"]
 
 
@@ -50,7 +51,7 @@ async def load_games(**kwargs):
     return loaded_game_states
 
 
-async def check_user_answer(answer: str, game: Game):
+async def check_user_answer(message: Message, game: Game):
     """
     Проверка ответов пользователей в чате:
 
@@ -61,6 +62,7 @@ async def check_user_answer(answer: str, game: Game):
         True - угадал слово
         None - не угадал
     """
+    answer = message.text
     print("check_user_answer", answer, game.leader_name)
     user_answer = answer.lower().replace("ё", "е").replace("й", "и")
     if user_answer in game.answers_set:
@@ -81,5 +83,5 @@ async def check_user_answer(answer: str, game: Game):
 
     if not (set_of_correct_words - set_of_words_in_message):
         # Угадал слово
-        await game.add_current_word_to_used()
+        await game.add_current_word_to_used(message.from_user.id)
         return True
