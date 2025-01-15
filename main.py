@@ -11,7 +11,7 @@ from src.utils import (
     check_user_answer,
 )
 from app.words_generator import get_random_word
-from app.statistics import inc_user_stat
+from app.statistics import inc_user_stat, get_global_stats, get_chat_stats
 
 
 games: dict  # Словарь с активными играми в чатах
@@ -46,6 +46,20 @@ async def start_game(message: Message):
     return await bot.send_message(
         chat_id, **ui.get_start_game_message(message.from_user.full_name)
     )
+
+
+@bot.message_handler(commands=["stats_global"])
+async def stats_global(message: Message):
+    """Общая статистика игры"""
+    result = await get_global_stats()
+    return await bot.send_message(message.chat.id, **result)
+
+
+@bot.message_handler(commands=["stats"], func=is_group_command)
+async def stats(message: Message):
+    """Статистика игры по чату"""
+    result = await get_chat_stats(message.chat.id)
+    return await bot.send_message(message.chat.id, **result)
 
 
 async def end_game(game):

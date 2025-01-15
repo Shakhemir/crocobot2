@@ -30,7 +30,6 @@ async def load_stats(file_path) -> dict:
     async with aiofiles.open(file_path, encoding="utf-8") as f:
         content = await f.read()
     stats = json.loads(content)
-    print(stats)
     return stats
 
 
@@ -39,9 +38,9 @@ async def save_stats(file_name, stats: dict) -> None:
         await f.write(json.dumps(stats, indent=4, ensure_ascii=False))
 
 
-def get_chat_stats_filename(game: Game) -> str:
+def get_chat_stats_filename(chat_id) -> str:
     """Возвращает путь к файлу статистики чата"""
-    file_name = os.path.join(CHATS_DIR, str(game.chat_id).lstrip("-"), "stats.json")
+    file_name = os.path.join(CHATS_DIR, str(chat_id).lstrip("-"), "stats.json")
     return file_name
 
 
@@ -67,8 +66,56 @@ async def inc_user_stat(game: Game, user: User):
     """Увеличиваем очки пользователю и записываем в глобальную статистику и в статистику чата"""
 
     # Увеличиваем очки пользователя в чате
-    chat_filename = get_chat_stats_filename(game)
+    chat_filename = get_chat_stats_filename(game.chat_id)
     await inc_user_stat_in_file(chat_filename, user)
 
     # Увеличиваем очки пользователя в глобальной статистике
     await inc_user_stat_in_file(settings.GLOBAL_STATS_FILE, user)
+
+
+def get_correct_word_form(count):
+    if count % 10 == 1 and count % 100 != 11:
+        return "ответ"
+    elif 2 <= count % 10 <= 4 and not (12 <= count % 100 <= 14):
+        return "ответа"
+    else:
+        return "ответов"
+
+
+async def get_global_stats():
+    """Возвращает глобальную статистику игроков"""
+
+    global_stats = await load_stats(settings.GLOBAL_STATS_FILE)
+    sorted_stats = sorted(
+        global_stats.items(), key=lambda x: x[1]["score"], reverse=True
+    )
+    top_players = sorted_stats[:30]
+    if not top_players:
+        return dict(text="Пока нет глобальной статистики.")
+    result_message = "🌐 🏆 <b>Глобальный ТОП игроков в крокодила 🐊</b>\n\n"
+    for idx, (user_id_str, data) in enumerate(top_players, start=1):
+        user_name = data["name"]
+        score = data["score"]
+        word = get_correct_word_form(score)
+        result_message += f"{idx}. {user_name} — {score} {word}\n"
+    result_message += "\nНаш чат для игры в крокодил @game_crocochat"
+    return dict(text=result_message, parse_mode="HTML")
+
+
+async def get_chat_stats(chat_id):
+    """Возвращает статистику игроков в текущем чате"""
+
+    chat_filename = get_chat_stats_filename(chat_id)
+    chat_stats = await load_stats(chat_filename)
+    if not chat_stats:
+        return dict(text="Пока нет статистики для этого чата.")
+    sorted_stats = sorted(chat_stats.items(), key=lambda x: x[1]["score"], reverse=True)
+    top_players = sorted_stats[:20]
+    result_message = "🏆 <b>Топ игроков в крокодила 🐊 в этом чате</b>\n\n"
+    for idx, (user_id_str, data) in enumerate(top_players, start=1):
+        user_name = data["name"]
+        score = data["score"]
+        word = get_correct_word_form(score)
+        result_message += f"{idx}. {user_name} — {score} {word}\n"
+    result_message += "\nНаш чат для игры в крокодил @game_crocochat"
+    return dict(text=result_message, parse_mode="HTML")
