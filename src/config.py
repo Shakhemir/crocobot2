@@ -35,7 +35,6 @@ async def init_telegram_bot():
     await bot.set_my_commands(
         [
             BotCommand("start", "Начало игры"),
-            BotCommand("check", "Тесты"),
             BotCommand("stats", "Статистика по чату"),
             BotCommand("stats_global", "Глобальная статистика"),
         ],
