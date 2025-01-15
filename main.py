@@ -109,6 +109,11 @@ async def chat_messages(message: Message):
         )
 
 
+@bot.edited_message_handler(content_types=["text"], func=is_group_message)
+async def edited_chat_messages(message: Message):
+    return await chat_messages(message)
+
+
 @bot.callback_query_handler(func=lambda call: True)
 async def callback_handler(call: CallbackQuery):
     chat_id = call.message.chat.id

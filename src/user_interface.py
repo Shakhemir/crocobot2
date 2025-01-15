@@ -28,9 +28,9 @@ def get_welcome_message(bot_title):
 
 
 leader_markup = InlineKeyboardMarkup()
-view_word_btn = InlineKeyboardButton("🔎 Посмотреть слово", callback_data="view_word")
 change_word_btn = InlineKeyboardButton("🔄 Сменить слово", callback_data="change_word")
-leader_markup.add(view_word_btn, change_word_btn)
+view_word_btn = InlineKeyboardButton("🔎 Посмотреть слово", callback_data="view_word")
+leader_markup.add(change_word_btn, view_word_btn)
 
 
 def get_start_game_message(user_name):
