@@ -13,14 +13,18 @@ class Timer:
                 return None
         return super().__new__(cls)
 
-    def __init__(self, interval, callback, args=None, kwargs=None, end_time=None):
-        self.interval = interval
+    def __init__(self, interval: int | dict, callback, args=None, kwargs=None):
         current_time = time.time()
-        if end_time:  # Если задано время окончания при восстановлении таймера
-            self.start_time = end_time - interval
+        if isinstance(
+            interval, dict
+        ):  # Если задано время окончания при восстановлении таймера
+            self.interval = interval["interval"]
+            end_time = interval["end_time"]
+            self.start_time = end_time - self.interval
             self.timeout = end_time - current_time  # высчитываем остаток
             self.end_time = end_time
         else:  # Если таймер создается с нуля
+            self.interval = interval
             self.start_time = current_time
             self.timeout = interval
             self.end_time = current_time + interval
@@ -31,10 +35,7 @@ class Timer:
 
     async def _job(self):
         await asyncio.sleep(self.timeout)
-        if asyncio.iscoroutine(self._callback()):
-            await self._callback(*self._args, **self._kwargs)
-        else:
-            self._callback(*self._args, **self._kwargs)
+        await self._callback(*self._args, **self._kwargs)
 
     def cancel(self):
         self._task.cancel()
@@ -122,8 +123,9 @@ class Game:
         self.answers_set.clear()
         await self.save_game()
 
-    def end_exclusive(self):
+    async def end_exclusive(self):
         self.exclusive_user = None
+        await self.save_game()
 
     async def end_game(self, end_game_func):
         """Игра закончилась по истечении времени, слово не угадали"""
@@ -160,17 +162,17 @@ class Game:
                 continue
             if value:
                 setattr(obj, key, value)
-        # Восстановление таймера
+
+        # Восстановление таймеров
         end_game_func = kwargs.get("end_game_func")
         if end_game_func and (timer_state := state.get("game_timer")):
-            obj.game_timer = Timer(
-                timer_state["interval"],
-                end_game_func,
-                (obj,),
-                end_time=timer_state["end_time"],
-            )
+            obj.game_timer = Timer(timer_state, obj.end_game, (end_game_func,))
             if obj.active and obj.game_timer is None:
                 await end_game_func(obj)
+
+        if exclusive_state := state.get("exclusive_timer"):
+            obj.exclusive_timer = Timer(exclusive_state, obj.end_exclusive)
+
         return obj
 
     def __bool__(self):
