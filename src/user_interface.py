@@ -60,9 +60,7 @@ def get_game_already_started_message():
 
 def get_end_game_message(word):
     text = f"Игра закончена. Загаданное слово было: <b>{word}</b>. Нажмите /start, чтобы начать заново."
-    return dict(
-        text=text,
-    )
+    return dict(text=text, parse_mode="HTML")
 
 
 # Кнопка для выбора ведущего
