@@ -107,5 +107,5 @@ async def check_user_answer(message: Message, game: Game):
 
     if not (set_of_correct_words - set_of_words_in_message):
         # Угадал слово
-        await game.add_current_word_to_used(message.from_user.id)
+        await game.add_current_word_to_used(message.from_user)
         return True

@@ -113,16 +113,19 @@ class Game:
         self.current_word = self._word_gen_func(self)
         self.answers_set.clear()
 
-    async def add_current_word_to_used(self, user_id):
+    async def add_current_word_to_used(self, user: User):
         """Слово угадали"""
         self.active = False
         self.game_timer.cancel()
         self.exclusive_timer = Timer(settings.EXCLUSIVE_TIME, self.end_exclusive)
-        self.exclusive_user = user_id
+        self.exclusive_user = user.id
         self.used_words.add(self.current_word)
         if self.players is None:  # TODO временная проверка
             self.players = set()
-        self.players.add(user_id)
+        player = f"{user.id} {user.full_name}"
+        if user.username:
+            player += f" @{user.username}"
+        self.players.add(player)
         self.answers_set.clear()
         await self.save_game()
 
