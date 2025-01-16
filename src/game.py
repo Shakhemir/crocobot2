@@ -83,7 +83,7 @@ class Game:
         self.exclusive_timer: Timer | None = (
             None  # Таймер для исключительного права стать ведущим
         )
-        self.players: int | None = None  # Сколько игроков угадывали
+        self.players = set()  # Сколько игроков угадывали
 
     async def save_game(self):
         """Сохранение состояния игры"""
@@ -120,11 +120,15 @@ class Game:
         self.exclusive_timer = Timer(settings.EXCLUSIVE_TIME, self.end_exclusive)
         self.exclusive_user = user_id
         self.used_words.add(self.current_word)
+        if self.players is None:  # TODO временная проверка
+            self.players = set()
+        self.players.add(user_id)
         self.answers_set.clear()
         await self.save_game()
 
     async def end_exclusive(self):
         self.exclusive_user = None
+        self.exclusive_timer = None
         await self.save_game()
 
     async def end_game(self, end_game_func):
@@ -179,11 +183,19 @@ class Game:
         return self.active
 
     def __str__(self):
+        def dumps_default(obj):
+            if isinstance(obj, set):
+                return list(obj)
+            if isinstance(obj, Timer):
+                return str(obj)
+
         state = {
             key: value for key, value in self.__dict__.items() if not callable(value)
         }
         try:
-            return json.dumps(state, indent=4, ensure_ascii=False)
+            return json.dumps(
+                state, indent=4, ensure_ascii=False, default=dumps_default
+            )
         except:
             return str(state)
 

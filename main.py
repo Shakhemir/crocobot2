@@ -1,20 +1,16 @@
 import asyncio
 from telebot.types import Message, CallbackQuery
-from src.config import bot, bot_title
+from src.config import bot, bot_title, games
 import src.user_interface as ui
-from src.game import Game
 from src.utils import (
     is_group_command,
     is_group_message,
     load_games,
-    save_game,
+    get_game,
     check_user_answer,
 )
-from app.words_generator import get_random_word
 from app.statistics import inc_user_stat, get_global_stats, get_chat_stats
-
-
-games: dict  # Словарь с активными играми в чатах
+import app.admin  # don't remove
 
 
 @bot.message_handler(
@@ -26,19 +22,21 @@ async def start_game(message: Message):
     return await bot.reply_to(message, **ui.get_welcome_message(bot_title))
 
 
-async def get_game(message: Message):
-    game = games.get(message.chat.id)
-    if game is None:
-        game = Game(message, get_random_word, save_game)
-        games[message.chat.id] = game
-        await save_game(game)
-    return game
-
-
 @bot.message_handler(commands=["start"], func=is_group_command)
 async def start_game(message: Message):
     """Старт игры"""
     chat_id = message.chat.id
+    try:
+        await bot.promote_chat_member(
+            chat_id, message.from_user.id, can_manage_chat=True
+        )
+        print("Сделал админом")
+        await bot.set_chat_administrator_custom_title(
+            chat_id, message.from_user.id, "Ведущий"
+        )
+        print("Установил статус на Ведущий")
+    except:
+        print("Не смооооог :(")
     chat_game = await get_game(message)
     if chat_game:  # Если игра уже активна
         return await bot.send_message(chat_id, **ui.get_game_already_started_message())
@@ -65,24 +63,6 @@ async def stats(message: Message):
 async def end_game(game):
     """Отправляем сообщение об окончании игры"""
     await bot.send_message(game.chat_id, **ui.get_end_game_message(game.current_word))
-
-
-@bot.message_handler(commands=["check"], func=is_group_command)
-async def check_game(message: Message):
-    """Тестируем"""
-    chat_game = await get_game(message)
-    print("check_game", chat_game)
-    active = "🟢" if chat_game.active else "🔴"
-    if gt := chat_game.game_timer:
-        interval, time_left, time_remain = gt.interval, gt.time_left, gt.time_remain
-        gt_text = f"{interval}s: {time_left}s, {time_remain}s"
-    else:
-        gt_text = "No game timer"
-    return await bot.send_message(
-        message.chat.id,
-        f"{active} {gt_text}\nСлово: {chat_game.current_word}\n"
-        f"{chat_game.used_words=}",
-    )
 
 
 @bot.message_handler(content_types=["text"], func=is_group_message)
@@ -149,10 +129,8 @@ async def callback_handler(call: CallbackQuery):
 
 
 async def start_bot():
-    global games
-    games = await load_games(
-        word_gen_func=get_random_word, save_game_func=save_game, end_game_func=end_game
-    )
+    loaded_games = await load_games(end_game_func=end_game)
+    games.update(loaded_games)
     print(f"{games=}")
     await bot.infinity_polling()
 

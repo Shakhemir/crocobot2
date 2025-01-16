@@ -27,6 +27,14 @@ def get_welcome_message(bot_title):
     )
 
 
+# Кнопка для выбора ведущего
+make_lead_markup = InlineKeyboardMarkup()
+want_to_lead_btn = InlineKeyboardButton(
+    "Стать ведущим 🐳", callback_data="want_to_lead"
+)
+make_lead_markup.add(want_to_lead_btn)
+
+# Кнопки для ведущего
 leader_markup = InlineKeyboardMarkup()
 change_word_btn = InlineKeyboardButton("🔄 Сменить слово", callback_data="change_word")
 view_word_btn = InlineKeyboardButton("🔎 Посмотреть слово", callback_data="view_word")
@@ -60,15 +68,7 @@ def get_game_already_started_message():
 
 def get_end_game_message(word):
     text = f"Игра закончена. Загаданное слово было: <b>{word}</b>. Нажмите /start, чтобы начать заново."
-    return dict(text=text, parse_mode="HTML")
-
-
-# Кнопка для выбора ведущего
-make_lead_markup = InlineKeyboardMarkup()
-want_to_lead_btn = InlineKeyboardButton(
-    "Стать ведущим 🐳", callback_data="want_to_lead"
-)
-make_lead_markup.add(want_to_lead_btn)
+    return dict(text=text, reply_markup=make_lead_markup, parse_mode="HTML")
 
 
 def get_new_game_message(user, current_word):

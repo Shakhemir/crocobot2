@@ -6,8 +6,9 @@ import pickle
 import aiofiles
 from telebot.types import Message
 from src.game import Game
-from src.config import bot, bot_username
+from src.config import TESTERS_IDS, bot_username, games
 from src.config import logger, settings
+from app.words_generator import get_random_word
 
 
 def is_group_command(message: Message):
@@ -25,9 +26,27 @@ def is_group_message(message: Message):
     return message.chat.type in ["group", "supergroup"]
 
 
+def is_admin_message(message: Message):
+    if message.from_user.id in TESTERS_IDS and message.chat.type not in [
+        "group",
+        "supergroup",
+    ]:
+        return True
+
+
 async def save_game(game: Game):
     async with aiofiles.open(f"{settings.STATE_SAVE_DIR}{game.chat_id}.pkl", "wb") as f:
         await f.write(pickle.dumps(game.save_state()))
+
+
+async def get_game(message: Message | int):
+    chat_id = message if isinstance(message, int) else message.chat.id
+    game = games.get(chat_id)
+    if game is None:
+        game = Game(message, get_random_word, save_game)
+        games[chat_id] = game
+        await save_game(game)
+    return game
 
 
 async def load_games(**kwargs):
@@ -42,7 +61,12 @@ async def load_games(**kwargs):
                 ) as f:
                     content = await f.read()
                     state = pickle.loads(content)
-                    restored_game = await Game.load_state(state, **kwargs)
+                    restored_game = await Game.load_state(
+                        state,
+                        word_gen_func=get_random_word,
+                        save_game_func=save_game,
+                        **kwargs,
+                    )
             except EOFError:
                 logger.error("Ошибка при загрузке файла %r", filename_pkl)
             else:

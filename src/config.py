@@ -17,6 +17,8 @@ from .settings import settings
 TESTERS_IDS = tuple(map(int, settings.TESTERS_IDS.split(",")))
 print(f"{TESTERS_IDS=}")
 
+games = {}  # Словарь с активными играми в чатах
+
 
 async def init_telegram_bot():
     bot = MyTeleBot(
