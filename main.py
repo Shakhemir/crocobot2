@@ -64,7 +64,7 @@ async def stats(message: Message):
 
 async def end_game(game):
     """Отправляем сообщение об окончании игры"""
-    await bot.send_message(game.chat_id, **ui.get_end_game_message())
+    await bot.send_message(game.chat_id, **ui.get_end_game_message(game.current_word))
 
 
 @bot.message_handler(commands=["check"], func=is_group_command)

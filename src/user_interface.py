@@ -58,8 +58,8 @@ def get_game_already_started_message():
     return dict(text=text)
 
 
-def get_end_game_message():
-    text = "Игра закончена. Нажмите /start, чтобы начать заново."
+def get_end_game_message(word):
+    text = f"Игра закончена. Загаданное слово было: <b>{word}</b>. Нажмите /start, чтобы начать заново."
     return dict(
         text=text,
     )
