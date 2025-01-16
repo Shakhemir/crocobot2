@@ -185,6 +185,10 @@ class Game:
     def __str__(self):
         def dumps_default(obj):
             if isinstance(obj, set):
+                res = list(obj)
+                if (l := len(res)) > 5:
+                    res = res[:5]
+                    res.append(f"... {l} items")
                 return list(obj)
             if isinstance(obj, Timer):
                 return str(obj)
