@@ -69,7 +69,8 @@ async def end_game(game):
 async def chat_messages(message: Message):
     """Обработчик сообщений в чатах"""
     chat_id = message.chat.id
-    print("chat_messages", message.text)
+    log = f"{chat_id} `{message.chat.title}` {message.from_user.full_name} :: {message.text}"
+    print(log)
     chat_game = await get_game(message)
 
     # Если игра не активна либо пишет ведущий, то выходим
