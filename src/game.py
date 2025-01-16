@@ -189,7 +189,7 @@ class Game:
                 if (l := len(res)) > 5:
                     res = res[:5]
                     res.append(f"... {l} items")
-                return list(obj)
+                return res
             if isinstance(obj, Timer):
                 return str(obj)
 
