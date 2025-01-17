@@ -1,5 +1,6 @@
 import asyncio
 import json
+import random
 import time
 from telebot.types import Message, User
 from src.config import settings
@@ -189,8 +190,8 @@ class Game:
         def dumps_default(obj):
             if isinstance(obj, set):
                 res = list(obj)
-                if (l := len(res)) > 5:
-                    res = res[:5]
+                if (l := len(res)) > 6:
+                    res = random.sample(res, 5)
                     res.append(f"... {l} items")
                 return res
             if isinstance(obj, Timer):

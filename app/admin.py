@@ -18,7 +18,6 @@ def make_active_chats_markup():
     chats_markup = InlineKeyboardMarkup()
     print(get_chats_for_admins.__doc__)
     for game in games.values():
-        print(game)
         if game.active:
             chat_btn = InlineKeyboardButton(
                 game.chat_title, callback_data=f"chat_info{game.chat_id}"
