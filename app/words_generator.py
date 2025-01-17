@@ -11,7 +11,10 @@ with open(settings.WORDS_FILE, encoding="utf-8") as f:
 def get_random_word(game: Game):
     """Возвращает случайное слово, исключая использованные"""
     remaining_words = list(set_of_words - game.used_words)
-    if remaining_words:
+    # Считаем сколько процентов слов не использовано.
+    # Если менее 30%, то обнуляем множество использованных слов
+    remain_per_cent = len(remaining_words) / len(set_of_words) < 0.3
+    if not remain_per_cent:
         return random.choice(remaining_words)
     else:
         # Если использованные слова перекрывают все, то обнуляем это множество
