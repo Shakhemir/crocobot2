@@ -36,9 +36,8 @@ make_lead_markup.add(want_to_lead_btn)
 
 # Кнопки для ведущего
 leader_markup = InlineKeyboardMarkup()
-change_word_btn = InlineKeyboardButton("🔄 Сменить слово", callback_data="change_word")
-view_word_btn = InlineKeyboardButton("🔎 Посмотреть слово", callback_data="view_word")
 change_word_btn = InlineKeyboardButton("🔄 Сменить", callback_data="change_word")
+view_word_btn = InlineKeyboardButton("🔎 Посмотреть", callback_data="view_word")
 leader_markup.add(change_word_btn, view_word_btn)
 
 
