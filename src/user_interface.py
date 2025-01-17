@@ -51,9 +51,19 @@ def get_start_game_message(user_name):
     )
 
 
-def get_lead_game_message(user_name):
+def get_correct_word_form(count):
+    if count % 10 == 1 and count % 100 != 11:
+        return "минута"
+    elif 2 <= count % 10 <= 4 and not (12 <= count % 100 <= 14):
+        return "минуты"
+    else:
+        return "минут"
+
+
+def get_lead_game_message(user_name, minutes):
     user_name = util.escape(user_name)
-    text = f"<b>{user_name}</b> объясняет слово ⚡️\n\nВедущий, выберите действие:"
+    m = get_correct_word_form(minutes)
+    text = f"<b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}.\n\nВедущий, выберите действие:"
     return dict(
         text=text,
         parse_mode="html",

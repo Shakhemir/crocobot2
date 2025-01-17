@@ -111,8 +111,9 @@ async def callback_handler(call: CallbackQuery):
         await bot.answer_callback_query(
             call.id, text=f"Ваше слово: {chat_game.current_word}", show_alert=True
         )
+        game_time = (chat_game.game_timer.interval + 29) // 60
         await bot.send_message(
-            chat_id, **ui.get_lead_game_message(call.from_user.full_name)
+            chat_id, **ui.get_lead_game_message(call.from_user.full_name, game_time)
         )
     elif call.data == "view_word" and call.from_user.id == chat_game.current_leader:
         await bot.answer_callback_query(
