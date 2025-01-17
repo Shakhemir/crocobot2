@@ -41,16 +41,6 @@ view_word_btn = InlineKeyboardButton("🔎 Посмотреть", callback_data=
 leader_markup.add(change_word_btn, view_word_btn)
 
 
-def get_start_game_message(user_name):
-    user_name = util.escape(user_name)
-    text = f"Игра начинается! <b>{user_name}</b> объясняет слово ⚡️\n\nВедущий, выберите действие:"
-    return dict(
-        text=text,
-        parse_mode="html",
-        reply_markup=leader_markup,
-    )
-
-
 def get_correct_word_form(count):
     if count % 10 == 1 and count % 100 != 11:
         return "минута"
@@ -58,6 +48,17 @@ def get_correct_word_form(count):
         return "минуты"
     else:
         return "минут"
+
+
+def get_start_game_message(user_name, minutes):
+    user_name = util.escape(user_name)
+    m = get_correct_word_form(minutes)
+    text = f"Игра начинается! <b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}.\n\nВедущий, выберите действие:"
+    return dict(
+        text=text,
+        parse_mode="html",
+        reply_markup=leader_markup,
+    )
 
 
 def get_lead_game_message(user_name, minutes):
