@@ -192,7 +192,7 @@ class Game:
                 res = list(obj)
                 if (l := len(res)) > 6:
                     res = random.sample(res, 5)
-                    res.append(f"... {l} items")
+                    res.append(f"… {l} items")
                 return res
             if isinstance(obj, Timer):
                 return str(obj)

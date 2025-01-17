@@ -41,8 +41,9 @@ async def start_game(message: Message):
     if chat_game:  # Если игра уже активна
         return await bot.send_message(chat_id, **ui.get_game_already_started_message())
     await chat_game.start_game(message.from_user, end_game)
+    game_time = (chat_game.game_timer.interval + 29) // 60
     return await bot.send_message(
-        chat_id, **ui.get_start_game_message(message.from_user.full_name)
+        chat_id, **ui.get_start_game_message(message.from_user.full_name, game_time)
     )
 
 
