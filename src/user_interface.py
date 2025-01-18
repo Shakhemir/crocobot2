@@ -50,8 +50,8 @@ def get_correct_word_form(count):
         return "минут"
 
 
-def get_start_game_message(user_name, minutes):
-    user_name = util.escape(user_name)
+def get_start_game_message(user, minutes):
+    user_name = util.user_link(user)
     m = get_correct_word_form(minutes)
     text = f"Игра начинается! <b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}.\n\nВедущий, выберите действие:"
     return dict(
@@ -61,8 +61,8 @@ def get_start_game_message(user_name, minutes):
     )
 
 
-def get_lead_game_message(user_name, minutes):
-    user_name = util.escape(user_name)
+def get_lead_game_message(user, minutes):
+    user_name = util.user_link(user)
     m = get_correct_word_form(minutes)
     text = f"<b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}.\n\nВедущий, выберите действие:"
     return dict(
