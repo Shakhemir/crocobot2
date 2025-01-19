@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     GAME_TIME: int
     EXCLUSIVE_TIME: int
 
+    CHAT_PAGE_SIZE: int
+
     model_config = SettingsConfigDict(env_file=".env")
 
 

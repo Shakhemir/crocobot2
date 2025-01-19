@@ -16,7 +16,7 @@ async def get_chats_for_admins(message: Message):
 
 
 sorted_chat_files = []  # Список чатов, сортированный по времени
-CHATS_IN_PAGE = 5
+CHATS_IN_PAGE = settings.CHAT_PAGE_SIZE
 
 
 def get_sorted_chat_files():
