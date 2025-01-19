@@ -1,10 +1,11 @@
+from pathlib import Path
 from telebot.types import (
     Message,
     CallbackQuery,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
-from src.config import bot, games
+from src.config import bot, games, settings
 from src.utils import is_admin_message, is_group_command, get_game
 
 
@@ -14,19 +15,70 @@ async def get_chats_for_admins(message: Message):
     await bot.send_message(message.chat.id, **make_active_chats_markup())
 
 
-def make_active_chats_markup():
+sorted_chat_files = []  # Список чатов, сортированный по времени
+CHATS_IN_PAGE = 5
+
+
+def get_sorted_chat_files():
+    """Готовим отсортированный список чатов"""
+
+    def check_file(f: Path) -> bool:
+        return f.is_file() and f.suffix == ".pkl" and f.stem.startswith("-")
+
+    global sorted_chat_files
+    folder = Path(settings.STATE_SAVE_DIR)
+    sorted_files = sorted(
+        folder.iterdir(),
+        key=lambda f: f.stat().st_mtime if check_file(f) else 0,
+        reverse=True,
+    )
+    sorted_chat_files = [int(f.stem) for f in sorted_files]
+
+
+def make_active_chats_markup(offset=0, refresh_list=False):
+    if not sorted_chat_files or refresh_list:
+        get_sorted_chat_files()
     chats_markup = InlineKeyboardMarkup()
     print(get_chats_for_admins.__doc__)
-    for game in games.values():
-        if game.active:
-            chat_btn = InlineKeyboardButton(
-                game.chat_title, callback_data=f"chat_info{game.chat_id}"
-            )
-            chats_markup.add(chat_btn)
-    chats_markup.add(
-        InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh_chat_info")
+    if offset < 0:
+        offset = 0
+    for chat_id in sorted_chat_files[offset : offset + CHATS_IN_PAGE]:
+        game = games.get(chat_id)
+        if game is None:
+            continue
+        prefix = "🟢" if game.active else "🔴"
+        chat_btn = InlineKeyboardButton(
+            f"{prefix} {game.chat_title}", callback_data=f"chat_info{game.chat_id}"
+        )
+        chats_markup.add(chat_btn)
+
+    # Кнопки пагинации
+    page_buttons = []
+    if offset:
+        page_buttons += [
+            InlineKeyboardButton("⇤", callback_data=f"chats:0"),
+            InlineKeyboardButton("<", callback_data=f"chats:{offset - CHATS_IN_PAGE}"),
+        ]
+    page_buttons.append(
+        InlineKeyboardButton("🔄", callback_data=f"refresh_chats:{offset}")
     )
-    return dict(text=get_chats_for_admins.__doc__, reply_markup=chats_markup)
+    last_offset = (len(sorted_chat_files) // CHATS_IN_PAGE) * CHATS_IN_PAGE
+    is_last_page = offset + CHATS_IN_PAGE >= len(sorted_chat_files)
+    if not is_last_page:
+        page_buttons += [
+            InlineKeyboardButton(">", callback_data=f"chats:{offset + CHATS_IN_PAGE}"),
+            InlineKeyboardButton("⇥", callback_data=f"chats:{last_offset}"),
+        ]
+
+    chats_markup.add(*page_buttons, row_width=5)
+    all_pages = (len(sorted_chat_files) - 1 + CHATS_IN_PAGE) // CHATS_IN_PAGE
+    page = offset // CHATS_IN_PAGE + 1
+    text = (
+        f"<b>{get_chats_for_admins.__doc__}</b>\n\n"
+        f"Всего чатов: <code>{len(sorted_chat_files)}</code>\n"
+        f"Страница: <code>{page} / {all_pages}</code>"
+    )
+    return dict(text=text, parse_mode="html", reply_markup=chats_markup)
 
 
 @bot.message_handler(commands=["check"], func=is_group_command)
@@ -58,7 +110,8 @@ async def make_tester_game_stats(chat_id):
     chat_game = await get_game(chat_id)
     markup = InlineKeyboardMarkup()
     button = InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh{chat_id}")
-    markup.add(button)
+    button_close = InlineKeyboardButton("✖️", callback_data="close")
+    markup.add(button, button_close)
     return dict(text=str(chat_game), reply_markup=markup)
 
 
@@ -69,10 +122,29 @@ async def chat_info_callback_handler(call: CallbackQuery):
     await bot.send_message(call.message.chat.id, **game_stats)
 
 
+@bot.callback_query_handler(func=lambda call: call.data.startswith("chats:"))
+async def chat_info_callback_handler(call: CallbackQuery):
+    offset = int(call.data.split(":")[1])
+    kwargs = make_active_chats_markup(offset=offset)
+    await bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        **kwargs,
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "close")
+async def close_callback_handler(call: CallbackQuery):
+    await bot.delete_message(
+        chat_id=call.message.chat.id, message_id=call.message.message_id
+    )
+
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith("refresh"))
 async def chat_info_refresh_callback_handler(call: CallbackQuery):
-    if call.data.endswith("chat_info"):
-        kwargs = make_active_chats_markup()
+    if "chats" in call.data:
+        offset = int(call.data.split(":")[1])
+        kwargs = make_active_chats_markup(offset=offset, refresh_list=True)
     else:
         chat_id = int(call.data.lstrip("refresh"))
         kwargs = await make_tester_game_stats(chat_id)
