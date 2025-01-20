@@ -4,7 +4,7 @@ import re
 import os
 import pickle
 import aiofiles
-from telebot.types import Message
+from telebot.types import Message, User
 from src.game import Game
 from src.config import TESTERS_IDS, bot_username, games
 from src.config import logger, settings
@@ -109,3 +109,15 @@ async def check_user_answer(message: Message, game: Game):
         # Угадал слово
         await game.add_current_word_to_used(message.from_user)
         return True
+
+
+def log_game(text: str, game: Game, user: User):
+    logger.info(
+        "Chat=%s %r, user=%s %r, word=%r :: %s",
+        game.chat_id,
+        game.chat_title,
+        user.id,
+        user.full_name,
+        game.current_word,
+        text,
+    )

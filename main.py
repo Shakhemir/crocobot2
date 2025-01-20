@@ -1,6 +1,6 @@
 import asyncio
 from telebot.types import Message, CallbackQuery
-from src.config import bot, bot_title, games
+from src.config import bot, bot_title, games, TESTERS_IDS
 import src.user_interface as ui
 from src.utils import (
     is_group_command,
@@ -8,6 +8,7 @@ from src.utils import (
     load_games,
     get_game,
     check_user_answer,
+    log_game,
 )
 from app.statistics import inc_user_stat, get_global_stats, get_chat_stats
 import app.admin  # don't remove
@@ -26,22 +27,12 @@ async def start_game(message: Message):
 async def start_game(message: Message):
     """Старт игры"""
     chat_id = message.chat.id
-    try:
-        await bot.promote_chat_member(
-            chat_id, message.from_user.id, can_manage_chat=True
-        )
-        print("Сделал админом")
-        await bot.set_chat_administrator_custom_title(
-            chat_id, message.from_user.id, "Ведущий"
-        )
-        print("Установил статус на Ведущий")
-    except:
-        print("Не смооооог :(")
     chat_game = await get_game(message)
     if chat_game:  # Если игра уже активна
         return await bot.send_message(chat_id, **ui.get_game_already_started_message())
     await chat_game.start_game(message.from_user, end_game)
     game_time = (chat_game.game_timer.interval + 29) // 60
+    log_game("Игра началась", chat_game, message.from_user)
     return await bot.send_message(
         chat_id, **ui.get_start_game_message(message.from_user, game_time)
     )
@@ -84,6 +75,7 @@ async def chat_messages(message: Message):
         except:
             pass
     elif result:  # Угадал слово
+        log_game("Угадал слово", chat_game, message.from_user)
         await inc_user_stat(chat_game, message.from_user)  # Изменяем статистику
         await bot.send_message(
             chat_id,
@@ -109,6 +101,7 @@ async def callback_handler(call: CallbackQuery):
                 show_alert=True,
             )
         await chat_game.start_game(call.from_user, end_game)
+        log_game("Новый ведущий", chat_game, call.from_user)
         await bot.answer_callback_query(
             call.id, text=f"Ваше слово: {chat_game.current_word}", show_alert=True
         )
@@ -116,12 +109,14 @@ async def callback_handler(call: CallbackQuery):
         await bot.send_message(
             chat_id, **ui.get_lead_game_message(call.from_user, game_time)
         )
-    elif call.data == "view_word" and call.from_user.id == chat_game.current_leader:
+    elif call.data == "view_word" and call.from_user.id in TESTERS_IDS + (chat_game.current_leader, ):
+        log_game("Посмотрел слово", chat_game, call.from_user)
         await bot.answer_callback_query(
             call.id, text=f"Ваше слово: {chat_game.current_word}", show_alert=True
         )
     elif call.data == "change_word" and call.from_user.id == chat_game.current_leader:
         chat_game.define_new_word()
+        log_game("Сменил слово", chat_game, call.from_user)
         await bot.answer_callback_query(
             call.id, text=f"Ваше новое слово: {chat_game.current_word}", show_alert=True
         )
