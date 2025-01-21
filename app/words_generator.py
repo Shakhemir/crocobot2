@@ -10,6 +10,11 @@ with open(settings.WORDS_FILE, encoding="utf-8") as f:
 
 def get_random_word(game: Game):
     """Возвращает случайное слово, исключая использованные"""
+
+    if game.next_words:  # Если есть подкинутые админом слова
+        word = game.next_words.pop(0)
+        return word
+
     remaining_words = list(set_of_words - game.used_words)
     # Считаем сколько процентов слов не использовано.
     # Если менее 30%, то обнуляем множество использованных слов

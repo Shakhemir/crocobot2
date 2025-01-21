@@ -104,14 +104,31 @@ async def admins_messages(message: Message):
         chat_id = int(message.text)
         game_stats = await make_tester_game_stats(chat_id)
         await bot.send_message(chat_id=message.chat.id, **game_stats)
+    elif message.reply_to_message:
+        # Подкидывание слов админом
+        find_word_idx = '"chat_id":'
+        start_index = message.reply_to_message.text.find(find_word_idx)
+        end_index = message.reply_to_message.text.find(",", start_index)
+        chat_id = int(
+            message.reply_to_message.text[start_index + len(find_word_idx) : end_index]
+        )
+        await bot.delete_message(message.chat.id, message.message_id)
+        game = games.get(chat_id)
+        game.next_words.append(message.text)
+        game_stats = await make_tester_game_stats(chat_id)
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=message.reply_to_message.message_id,
+            **game_stats,
+        )
 
 
 async def make_tester_game_stats(chat_id):
     chat_game = await get_game(chat_id)
     markup = InlineKeyboardMarkup()
-    button = InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh{chat_id}")
-    button_close = InlineKeyboardButton("✖️", callback_data="close")
-    markup.add(button, button_close)
+    refresh_btn = InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh{chat_id}")
+    close_btn = InlineKeyboardButton("✖️", callback_data="close")
+    markup.add(refresh_btn, close_btn)
     return dict(text=str(chat_game), reply_markup=markup)
 
 

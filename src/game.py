@@ -77,6 +77,7 @@ class Game:
         self.current_leader: int | None = None  # Ведущий
         self.leader_name: str | None = None  # Имя ведущего
         self.current_word: str | None = None  # Загаданное слово
+        self.next_words = []  # Очередь следующих слов, подкинутых админом
         self.answers_set = set()  # Множество использованных ответов
         self.exclusive_user: int | None = (
             None  # Угадавший игрок, имеющий исключительное право стать ведущим

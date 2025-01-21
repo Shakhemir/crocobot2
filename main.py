@@ -125,6 +125,7 @@ async def callback_handler(call: CallbackQuery):
         )
     elif call.data == "change_word" and call.from_user.id == chat_game.current_leader:
         chat_game.define_new_word()
+        await chat_game.save_game()
         log_game("Сменил слово", chat_game, call.from_user)
         await bot.answer_callback_query(
             call.id, text=f"Ваше новое слово: {chat_game.current_word}", show_alert=True
