@@ -42,6 +42,7 @@ async def start_game(game, chat_id, user):
     await game.start_game(user, end_game)
     if game.exclusive_user and await inc_user_fine(game):  # Проверка на штраф
         args = game.exclusive_user, game.exclusive_user_name
+        log_game("Получил штраф", game, args)
         await bot.send_message(chat_id, **ui.get_fault_message(*args))
 
 

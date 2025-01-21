@@ -113,13 +113,17 @@ async def check_user_answer(message: Message, game: Game):
         return True
 
 
-def log_game(text: str, game: Game, user: User):
+def log_game(text: str, game: Game, user: User | tuple):
+    if isinstance(user, tuple):
+        user_id, user_name = user
+    else:
+        user_id, user_name = user.id, user.full_name
     logger.info(
         "Chat=%s %r, user=%s %r, word=%r :: %s",
         game.chat_id,
         game.chat_title,
-        user.id,
-        user.full_name,
+        user_id,
+        user_name,
         game.current_word,
         text,
     )
