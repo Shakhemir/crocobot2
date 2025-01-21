@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     GAME_TIME: int
     EXCLUSIVE_TIME: int
+    FAULT_SIZE: int  # Кол-во пропусков за который дается штраф
 
     CHAT_PAGE_SIZE: int
 

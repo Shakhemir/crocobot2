@@ -10,7 +10,7 @@ from src.utils import (
     check_user_answer,
     log_game,
 )
-from app.statistics import inc_user_stat, get_global_stats, get_chat_stats
+from app.statistics import get_global_stats, get_chat_stats, inc_user_fine
 import app.admin  # don't remove
 
 
@@ -18,24 +18,31 @@ import app.admin  # don't remove
     commands=["start"],
     func=lambda message: message.chat.type not in ["group", "supergroup"],
 )
-async def start_game(message: Message):
+async def start_command(message: Message):
     """Старт в приватном чате"""
     return await bot.reply_to(message, **ui.get_welcome_message(bot_title))
 
 
 @bot.message_handler(commands=["start"], func=is_group_command)
-async def start_game(message: Message):
+async def start_command(message: Message):
     """Старт игры"""
     chat_id = message.chat.id
     chat_game = await get_game(message)
     if chat_game:  # Если игра уже активна
         return await bot.send_message(chat_id, **ui.get_game_already_started_message())
-    await chat_game.start_game(message.from_user, end_game)
+    await start_game(chat_game, chat_id, message.from_user)
     game_time = (chat_game.game_timer.interval + 29) // 60
     log_game("Игра началась", chat_game, message.from_user)
     return await bot.send_message(
         chat_id, **ui.get_start_game_message(message.from_user, game_time)
     )
+
+
+async def start_game(game, chat_id, user):
+    await game.start_game(user, end_game)
+    if game.exclusive_user and await inc_user_fine(game):  # Проверка на штраф
+        args = game.exclusive_user, game.exclusive_user_name
+        await bot.send_message(chat_id, **ui.get_fault_message(*args))
 
 
 @bot.message_handler(commands=["stats_global"])
@@ -76,7 +83,6 @@ async def chat_messages(message: Message):
             pass
     elif result:  # Угадал слово
         log_game("Угадал слово", chat_game, message.from_user)
-        await inc_user_stat(chat_game, message.from_user)  # Изменяем статистику
         await bot.send_message(
             chat_id,
             **ui.get_new_game_message(message.from_user, chat_game.current_word),
@@ -93,14 +99,14 @@ async def callback_handler(call: CallbackQuery):
     chat_id = call.message.chat.id
     chat_game = await get_game(call.message)
     if call.data == "want_to_lead" and not chat_game:
-        if chat_game.exclusive_user and call.from_user.id != chat_game.exclusive_user:
+        if chat_game.exclusive_timer and call.from_user.id != chat_game.exclusive_user:
             time_remain = chat_game.exclusive_timer.time_remain
             return await bot.answer_callback_query(
                 call.id,
-                f"Вы станете ведущим, если отгадавший не займет эту роль в течение {time_remain} секунд",
+                f"Вы станете ведущим, если отгадавший не займет эту роль в течение {time_remain} сек.",
                 show_alert=True,
             )
-        await chat_game.start_game(call.from_user, end_game)
+        await start_game(chat_game, chat_id, call.from_user)
         log_game("Новый ведущий", chat_game, call.from_user)
         await bot.answer_callback_query(
             call.id, text=f"Ваше слово: {chat_game.current_word}", show_alert=True
@@ -109,7 +115,9 @@ async def callback_handler(call: CallbackQuery):
         await bot.send_message(
             chat_id, **ui.get_lead_game_message(call.from_user, game_time)
         )
-    elif call.data == "view_word" and call.from_user.id in TESTERS_IDS + (chat_game.current_leader, ):
+    elif call.data == "view_word" and call.from_user.id in TESTERS_IDS + (
+        chat_game.current_leader,
+    ):
         log_game("Посмотрел слово", chat_game, call.from_user)
         await bot.answer_callback_query(
             call.id, text=f"Ваше слово: {chat_game.current_word}", show_alert=True

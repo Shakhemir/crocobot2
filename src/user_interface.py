@@ -84,6 +84,12 @@ def get_end_game_message(word):
 
 def get_new_game_message(user, current_word):
     user_link = util.user_link(user)
-    print(f"{user_link=}")
     text = f"😜 {user_link} отгадал(-а) слово <b>{current_word}</b>!\n\nКто хочет быть ведущим?"
     return dict(text=text, reply_markup=make_lead_markup, parse_mode="HTML")
+
+
+def get_fault_message(user_id, user_name):
+    user_name = util.escape(user_name)
+    user_link = f"<a href='tg://user?id={user_id}'>{user_name}</a>"
+    text = f"Игрок {user_link} был лишён одного очка за повторный отказ стать ведущим в игре."
+    return dict(text=text, parse_mode="HTML")

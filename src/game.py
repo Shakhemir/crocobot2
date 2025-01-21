@@ -81,9 +81,8 @@ class Game:
         self.exclusive_user: int | None = (
             None  # Угадавший игрок, имеющий исключительное право стать ведущим
         )
-        self.exclusive_timer: Timer | None = (
-            None  # Таймер для исключительного права стать ведущим
-        )
+        self.exclusive_user_name: int | None = None  # Имя угадавшего
+        self.exclusive_timer: Timer | None = None  # Таймер
         self.players = set()  # Сколько игроков угадывали
 
     async def save_game(self):
@@ -120,6 +119,7 @@ class Game:
         self.game_timer.cancel()
         self.exclusive_timer = Timer(settings.EXCLUSIVE_TIME, self.end_exclusive)
         self.exclusive_user = user.id
+        self.exclusive_user_name = user.full_name
         self.used_words.add(self.current_word)
         if self.players is None:  # TODO временная проверка
             self.players = set()
@@ -131,7 +131,6 @@ class Game:
         await self.save_game()
 
     async def end_exclusive(self):
-        self.exclusive_user = None
         self.exclusive_timer = None
         await self.save_game()
 
@@ -139,6 +138,7 @@ class Game:
         """Игра закончилась по истечении времени, слово не угадали"""
         self.active = False
         self.game_timer = None
+        self.exclusive_user = None
         self.answers_set.clear()
         await end_game_func(self)
         await self.save_game()

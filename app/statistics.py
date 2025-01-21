@@ -5,8 +5,6 @@ from telebot.types import User
 from src.game import Game
 from src.settings import settings
 
-CHATS_DIR = settings.CHATS_STATS_DIR
-
 
 async def load_stats(file_path) -> dict:
     """Загружает статистику из JSON файла, заодно делаем проверки на существования пути к файлу"""
@@ -40,7 +38,9 @@ async def save_stats(file_name, stats: dict) -> None:
 
 def get_chat_stats_filename(chat_id) -> str:
     """Возвращает путь к файлу статистики чата"""
-    file_name = os.path.join(CHATS_DIR, str(chat_id).lstrip("-"), "stats.json")
+    file_name = os.path.join(
+        settings.CHATS_STATS_DIR, str(chat_id).lstrip("-"), "stats.json"
+    )
     return file_name
 
 
@@ -71,6 +71,31 @@ async def inc_user_stat(game: Game, user: User):
 
     # Увеличиваем очки пользователя в глобальной статистике
     await inc_user_stat_in_file(settings.GLOBAL_STATS_FILE, user)
+
+
+async def inc_user_fine(game: Game):
+    """Увеличиваем штраф пользователя, когда он не взял ведущего"""
+
+    if game.current_leader == game.exclusive_user:
+        return  # Все нормально, не штрафуем
+
+    chat_filename = get_chat_stats_filename(game.chat_id)
+    stats = await load_stats(chat_filename)  # Загружаем статистику чата
+    user_id = str(game.exclusive_user)
+    user_stat = stats.get(user_id, {})
+
+    # Смотрим сколько раз нарушил
+    is_fined = False
+    user_stat["faults"] = user_stat.get("faults", 0) + 1
+    if user_stat["faults"] >= settings.FAULT_SIZE:
+        # Штрафуем
+        del user_stat["faults"]
+        user_stat["fines"] = user_stat.get("fines", 0) + 1
+        is_fined = True
+
+    stats.update({user_id: user_stat})
+    await save_stats(chat_filename, stats)  # Сохраняем статистику
+    return is_fined
 
 
 def get_correct_word_form(count):
@@ -114,7 +139,8 @@ async def get_chat_stats(chat_id):
     result_message = "🏆 <b>Топ игроков в крокодила 🐊 в этом чате</b>\n\n"
     for idx, (user_id_str, data) in enumerate(top_players, start=1):
         user_name = data["name"]
-        score = data["score"]
+        fines = data.get("fines", 0)  # Штрафы
+        score = data["score"] - fines
         word = get_correct_word_form(score)
         result_message += f"{idx}. {user_name} — {score} {word}\n"
     result_message += "\nНаш чат для игры в крокодил @game_crocochat"

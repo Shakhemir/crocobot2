@@ -9,6 +9,7 @@ from src.game import Game
 from src.config import TESTERS_IDS, bot_username, games
 from src.config import logger, settings
 from app.words_generator import get_random_word
+from app.statistics import inc_user_stat
 
 
 def is_group_command(message: Message):
@@ -79,7 +80,7 @@ async def check_user_answer(message: Message, game: Game):
     """
     Проверка ответов пользователей в чате:
 
-    :param answer: текст сообщения
+    :param message: текст сообщения и инфо о юзере
     :param game: текущая игра
     :return:
         -1 - повтор ответа, нужно удалить
@@ -108,6 +109,7 @@ async def check_user_answer(message: Message, game: Game):
     if not (set_of_correct_words - set_of_words_in_message):
         # Угадал слово
         await game.add_current_word_to_used(message.from_user)
+        await inc_user_stat(game, message.from_user)  # Изменяем статистику
         return True
 
 
