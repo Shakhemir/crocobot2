@@ -68,6 +68,10 @@ async def end_game(game):
 @bot.message_handler(content_types=["text"], func=is_group_message)
 async def chat_messages(message: Message):
     """Обработчик сообщений в чатах"""
+    if message.from_user.id in TESTERS_IDS:
+        print(":" * 55)
+        print(f"{message.is_topic_message=}")
+        print(f"{message.message_thread_id=}")
     chat_id = message.chat.id
     log = f"{chat_id} `{message.chat.title}` {message.from_user.full_name} :: {message.text}"
     print(log)

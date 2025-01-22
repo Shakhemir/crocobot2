@@ -40,8 +40,16 @@ async def save_game(game: Game):
         await f.write(pickle.dumps(game.save_state()))
 
 
-async def get_game(message: Message | int):
-    chat_id = message if isinstance(message, int) else message.chat.id
+async def get_game(message: Message | str):
+    chat_id: str = (
+        message
+        if isinstance(message, str)
+        else (
+            str(message.chat.id)
+            if not message.is_topic_message
+            else f"{message.message_thread_id}-{message.message_thread_id}"
+        )
+    )
     game = games.get(chat_id)
     if game is None:
         game = Game(message, get_random_word, save_game)
@@ -55,7 +63,7 @@ async def load_games(**kwargs):
     for filename_pkl in os.listdir(settings.STATE_SAVE_DIR):
         filename, ext = filename_pkl.split(".")
         if ext == "pkl" and filename.startswith("-") and filename[1:].isdigit():
-            chat_id = int(filename)
+            chat_id = filename
             try:
                 async with aiofiles.open(
                     settings.STATE_SAVE_DIR + filename_pkl, "rb"

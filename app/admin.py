@@ -32,7 +32,7 @@ def get_sorted_chat_files():
         key=lambda f: f.stat().st_mtime if check_file(f) else 0,
         reverse=True,
     )
-    sorted_chat_files = [int(f.stem) for f in sorted_files]
+    sorted_chat_files = [f.stem for f in sorted_files]
 
 
 def make_active_chats_markup(offset=0, refresh_list=False):
@@ -101,7 +101,7 @@ async def check_game(message: Message):
 @bot.message_handler(content_types=["text"], func=is_admin_message)
 async def admins_messages(message: Message):
     if message.text.startswith("-") and message.text[1:].isdigit():
-        chat_id = int(message.text)
+        chat_id = message.text
         game_stats = await make_tester_game_stats(chat_id)
         await bot.send_message(chat_id=message.chat.id, **game_stats)
     elif message.reply_to_message:
@@ -109,9 +109,7 @@ async def admins_messages(message: Message):
         find_word_idx = '"chat_id":'
         start_index = message.reply_to_message.text.find(find_word_idx)
         end_index = message.reply_to_message.text.find(",", start_index)
-        chat_id = int(
-            message.reply_to_message.text[start_index + len(find_word_idx) : end_index]
-        )
+        chat_id = message.reply_to_message.text[start_index + len(find_word_idx): end_index]
         await bot.delete_message(message.chat.id, message.message_id)
         game = games.get(chat_id)
         game.next_words.append(message.text)
@@ -123,7 +121,7 @@ async def admins_messages(message: Message):
         )
 
 
-async def make_tester_game_stats(chat_id):
+async def make_tester_game_stats(chat_id: str):
     chat_game = await get_game(chat_id)
     markup = InlineKeyboardMarkup()
     refresh_btn = InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh{chat_id}")
@@ -134,7 +132,7 @@ async def make_tester_game_stats(chat_id):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("chat_info"))
 async def chat_info_callback_handler(call: CallbackQuery):
-    chat_id = int(call.data.lstrip("chat_info"))
+    chat_id = call.data.lstrip("chat_info")
     game_stats = await make_tester_game_stats(chat_id)
     await bot.send_message(call.message.chat.id, **game_stats)
 
@@ -163,7 +161,7 @@ async def chat_info_refresh_callback_handler(call: CallbackQuery):
         offset = int(call.data.split(":")[1])
         kwargs = make_active_chats_markup(offset=offset, refresh_list=True)
     else:
-        chat_id = int(call.data.lstrip("refresh"))
+        chat_id = call.data.lstrip("refresh")
         kwargs = await make_tester_game_stats(chat_id)
     try:
         await bot.edit_message_text(
