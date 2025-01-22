@@ -36,7 +36,10 @@ def is_admin_message(message: Message):
 
 
 async def save_game(game: Game):
-    async with aiofiles.open(f"{settings.STATE_SAVE_DIR}{game.chat_id}.pkl", "wb") as f:
+    file_name = (
+        game.chat_id if game.topic_id is None else f"{game.chat_id}-{game.topic_id}"
+    )
+    async with aiofiles.open(f"{settings.STATE_SAVE_DIR}{file_name}.pkl", "wb") as f:
         await f.write(pickle.dumps(game.save_state()))
 
 

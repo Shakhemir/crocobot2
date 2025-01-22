@@ -109,7 +109,9 @@ async def admins_messages(message: Message):
         find_word_idx = '"chat_id":'
         start_index = message.reply_to_message.text.find(find_word_idx)
         end_index = message.reply_to_message.text.find(",", start_index)
-        chat_id = message.reply_to_message.text[start_index + len(find_word_idx): end_index]
+        chat_id = message.reply_to_message.text[
+            start_index + len(find_word_idx) : end_index
+        ]
         await bot.delete_message(message.chat.id, message.message_id)
         game = games.get(chat_id)
         game.next_words.append(message.text)
