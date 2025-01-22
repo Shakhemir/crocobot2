@@ -43,7 +43,7 @@ async def save_game(game: Game):
         await f.write(pickle.dumps(game.save_state()))
 
 
-async def get_game(message: Message | str):
+async def get_game(message: Message | str, define_name: bool = None):
     chat_id: str = (
         message
         if isinstance(message, str)
@@ -53,10 +53,14 @@ async def get_game(message: Message | str):
             else f"{message.message_thread_id}-{message.message_thread_id}"
         )
     )
+    print(f"get_game {chat_id=}")
     game = games.get(chat_id)
     if game is None:
         game = Game(message, get_random_word, save_game)
         games[chat_id] = game
+        await save_game(game)
+    elif define_name:
+        game.define_chat_name(message)
         await save_game(game)
     return game
 

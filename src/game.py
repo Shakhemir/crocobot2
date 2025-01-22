@@ -66,13 +66,10 @@ class Game:
         self._save_game_func = save_game_func  # Функция сохранения состояния игры
 
         # Информация о чате, где проходит игра
-        self.chat_id = self.chat_title = self.topic_id = None
+        self.chat_id = self.chat_title = self.topic_id = self.topic_name = None
         if message:
             self.chat_id = message.chat.id
-            self.chat_title = message.chat.title
-            if message.is_topic_message:
-                self.topic_id = message.message_thread_id
-
+            self.define_chat_name(message)
         self.active = False  # Активна ли игра
         self.used_words = set()  # Множество угаданных слов
         self.game_timer: Timer | None = None  # Таймер игры
@@ -87,6 +84,15 @@ class Game:
         self.exclusive_user_name: int | None = None  # Имя угадавшего
         self.exclusive_timer: Timer | None = None  # Таймер
         self.players = set()  # Сколько игроков угадывали
+
+    def define_chat_name(self, message: Message):
+        self.chat_title = message.chat.title
+        if message.is_topic_message:
+            self.topic_id = message.message_thread_id
+            if message.reply_to_message.forum_topic_created:
+                self.topic_name = message.reply_to_message.forum_topic_created.name
+        else:
+            self.topic_id = self.topic_name = None
 
     async def save_game(self):
         """Сохранение состояния игры"""

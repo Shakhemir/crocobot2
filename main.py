@@ -27,7 +27,7 @@ async def start_command(message: Message):
 async def start_command(message: Message):
     """Старт игры"""
     chat_id = message.chat.id
-    chat_game = await get_game(message)
+    chat_game = await get_game(message, define_name=True)
     kwargs = {}
     if message.is_topic_message:
         kwargs.update(message_thread_id=message.message_thread_id)
@@ -71,7 +71,9 @@ async def stats(message: Message):
 
 async def end_game(game, **kwargs):
     """Отправляем сообщение об окончании игры"""
-    await bot.send_message(game.chat_id, **ui.get_end_game_message(game.current_word), **kwargs)
+    await bot.send_message(
+        game.chat_id, **ui.get_end_game_message(game.current_word), **kwargs
+    )
 
 
 @bot.message_handler(content_types=["text"], func=is_group_message)
@@ -102,7 +104,8 @@ async def chat_messages(message: Message):
         log_game("Угадал слово", chat_game, message.from_user)
         await bot.send_message(
             chat_id,
-            **ui.get_new_game_message(message.from_user, chat_game.current_word), **kwargs
+            **ui.get_new_game_message(message.from_user, chat_game.current_word),
+            **kwargs,
         )
 
 
