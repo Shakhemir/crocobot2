@@ -47,8 +47,14 @@ def make_active_chats_markup(offset=0, refresh_list=False):
         if game is None:
             continue
         prefix = "🟢" if game.active else "🔴"
+        if game.topic_id is None:
+            chat_id = game.chat_id
+            chat_title = game.chat_title
+        else:
+            chat_id = f"{game.chat_id}-{game.topic_id}"
+            chat_title = f"{game.chat_title} / {game.topic_name}"
         chat_btn = InlineKeyboardButton(
-            f"{prefix} {game.chat_title}", callback_data=f"chat_info{game.chat_id}"
+            f"{prefix} {chat_title}", callback_data=f"chat_info{chat_id}"
         )
         chats_markup.add(chat_btn)
 
