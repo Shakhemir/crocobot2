@@ -122,7 +122,11 @@ async def callback_handler(call: CallbackQuery):
     if call.message.is_topic_message:
         kwargs.update(message_thread_id=call.message.message_thread_id)
     if call.data == "want_to_lead" and not chat_game:
-        if chat_game.exclusive_timer and call.from_user.id != chat_game.exclusive_user:
+        if (
+            chat_game.exclusive_timer
+            and chat_game.exclusive_timer.time_remain > 0
+            and call.from_user.id != chat_game.exclusive_user
+        ):
             time_remain = chat_game.exclusive_timer.time_remain
             return await bot.answer_callback_query(
                 call.id,
