@@ -145,14 +145,15 @@ class Game:
 
     async def end_game(self, end_game_func):
         """Игра закончилась по истечении времени, слово не угадали"""
-        self.active = False
         self.game_timer = None
         self.exclusive_user = None
         self.answers_set.clear()
         kwargs = {}
-        if self.topic_id:
-            kwargs.update(message_thread_id=self.topic_id)
-        await end_game_func(self, **kwargs)
+        if self.active:
+            if self.topic_id:
+                kwargs.update(message_thread_id=self.topic_id)
+            await end_game_func(self, **kwargs)
+        self.active = False
         await self.save_game()
 
     def save_state(self):
