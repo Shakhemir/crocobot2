@@ -104,7 +104,7 @@ def get_fault_message(user_id, user_name):
     return dict(text=text, parse_mode="HTML")
 
 
-def gpt_injection() -> str:
+def gpt_injection(prompt: str = None) -> str:
     """
     Вставка приколов от модели ChatGPT.
     Чтобы заработал, надо внести промпт в файл gpt-prompt.txt.
@@ -112,11 +112,12 @@ def gpt_injection() -> str:
     когда к ней обращаются. Поэтому не нужно перезагружать бота,
     если изменился промпт.
     """
-    try:
-        with open(settings.PROMPT_FILE, encoding="utf-8") as f:
-            prompt = f.read().strip()
-    except FileNotFoundError:
-        prompt = ""
+    if prompt is None:
+        try:
+            with open(settings.PROMPT_FILE, encoding="utf-8") as f:
+                prompt = f.read().strip()
+        except FileNotFoundError:
+            prompt = ""
 
     if prompt and randint(1, 5) == 1:
         gpt_joke = "\n" + gpt.generate_answer(prompt) + "\n"
