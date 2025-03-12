@@ -53,7 +53,7 @@ def get_correct_word_form(count):
 def get_start_game_message(user, minutes):
     user_name = util.user_link(user)
     m = get_correct_word_form(minutes)
-    text = f"Игра начинается! <b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}.\n\nВедущий, выберите действие:"
+    text = f"Игра начинается!\n\n<b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}\n\nВедущий, объясняй слово"
     return dict(
         text=text,
         parse_mode="html",
@@ -64,7 +64,7 @@ def get_start_game_message(user, minutes):
 def get_lead_game_message(user, minutes):
     user_name = util.user_link(user)
     m = get_correct_word_form(minutes)
-    text = f"<b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}.\n\nВедущий, выберите действие:"
+    text = f"<b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}"
     return dict(
         text=text,
         parse_mode="html",
@@ -73,12 +73,12 @@ def get_lead_game_message(user, minutes):
 
 
 def get_game_already_started_message():
-    text = "Игра уже запущена. Дождитесь окончания текущей игры."
+    text = "Игра уже запущена. Предыдущее слово еще не отгадано."
     return dict(text=text)
 
 
 def get_end_game_message(word):
-    text = f"Игра закончена. Загаданное слово было: <b>{word}</b>. Нажмите /start, чтобы начать заново."
+    text = f"Игра завершена :(\n\nЗагаданное слово было: <b>{word}</b>.\n\nНажмите /start, чтобы начать игру."
     return dict(text=text, reply_markup=make_lead_markup, parse_mode="HTML")
 
 
@@ -91,5 +91,5 @@ def get_new_game_message(user, current_word):
 def get_fault_message(user_id, user_name):
     user_name = util.escape(user_name)
     user_link = f"<a href='tg://user?id={user_id}'>{user_name}</a>"
-    text = f"Игрок {user_link} был лишён одного очка за повторный отказ стать ведущим в игре."
+    text = f"Игрок {user_link} был лишён одного очка за повторный отказ стать ведущим в игре. Бывает:))"
     return dict(text=text, parse_mode="HTML")
