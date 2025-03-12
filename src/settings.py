@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     FAULT_SIZE: int  # Кол-во пропусков за который дается штраф
 
     CHAT_PAGE_SIZE: int
+    OPEN_API_KEY: str
 
     model_config = SettingsConfigDict(env_file=".env")
 
