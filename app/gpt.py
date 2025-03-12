@@ -2,7 +2,6 @@ from openai import OpenAI, OpenAIError
 from src.settings import settings
 
 client = OpenAI(api_key=settings.OPEN_API_KEY)
-MODEL = "gpt-4o-mini"
 
 
 def print_models():
@@ -13,7 +12,7 @@ def print_models():
 
 def generate_answer(prompt: str):
     messages = [{"role": "user", "content": prompt}]
-    response = client.chat.completions.create(model=MODEL, messages=messages)
+    response = client.chat.completions.create(model=settings.GPT_MODEL, messages=messages)
     return response.choices[0].message.content
 
 
