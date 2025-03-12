@@ -1,5 +1,8 @@
+from random import randint
 from telebot import util
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from app import gpt
+from src.settings import settings
 
 
 def get_welcome_message(bot_title):
@@ -64,7 +67,8 @@ def get_start_game_message(user, minutes):
 def get_lead_game_message(user, minutes):
     user_name = util.user_link(user)
     m = get_correct_word_form(minutes)
-    text = f"<b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}"
+    word_of_gpt = gpt_injection()
+    text = f"<b>{user_name}</b> объясняет слово ⚡️\nВремя игры <b>{minutes}</b> {m}\n{word_of_gpt}"
     return dict(
         text=text,
         parse_mode="html",
@@ -78,13 +82,18 @@ def get_game_already_started_message():
 
 
 def get_end_game_message(word):
-    text = f"Игра завершена :(\n\nЗагаданное слово было: <b>{word}</b>.\n\nНажмите /start, чтобы начать игру."
+    word_of_gpt = gpt_injection()
+    text = (
+        f"Игра завершена :(\n\nЗагаданное слово было: <b>{word}</b>.\n{word_of_gpt}\n"
+        f"Нажмите /start, чтобы начать игру."
+    )
     return dict(text=text, reply_markup=make_lead_markup, parse_mode="HTML")
 
 
 def get_new_game_message(user, current_word):
     user_link = util.user_link(user)
-    text = f"😜 {user_link} отгадал(-а) слово <b>{current_word}</b>!\n\nКто хочет быть ведущим?"
+    word_of_gpt = gpt_injection()
+    text = f"😜 {user_link} отгадал(-а) слово <b>{current_word}</b>!\n{word_of_gpt}\nКто хочет быть ведущим?"
     return dict(text=text, reply_markup=make_lead_markup, parse_mode="HTML")
 
 
@@ -93,3 +102,24 @@ def get_fault_message(user_id, user_name):
     user_link = f"<a href='tg://user?id={user_id}'>{user_name}</a>"
     text = f"Игрок {user_link} был лишён одного очка за повторный отказ стать ведущим в игре. Бывает:))"
     return dict(text=text, parse_mode="HTML")
+
+
+def gpt_injection() -> str:
+    """
+    Вставка приколов от модели ChatGPT.
+    Чтобы заработал, надо внести промпт в файл gpt-prompt.txt.
+    Функция считывает содержимое этого файла каждый раз,
+    когда к ней обращаются. Поэтому не нужно перезагружать бота,
+    если изменился промпт.
+    """
+    try:
+        with open(settings.PROMPT_FILE, encoding="utf-8") as f:
+            prompt = f.read().strip()
+    except FileNotFoundError:
+        prompt = ""
+
+    if prompt and randint(1, 5) == 1:
+        gpt_joke = "\n" + gpt.generate_answer(prompt) + "\n"
+        return gpt_joke
+    else:
+        return ""

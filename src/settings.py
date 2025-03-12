@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     # ChatGPT
     OPEN_API_KEY: str
     GPT_MODEL: str
+    PROMPT_FILE: str
 
     model_config = SettingsConfigDict(env_file=".env")
 
