@@ -123,7 +123,7 @@ async def get_global_stats():
         score = data["score"]
         word = get_correct_word_form(score)
         result_message += f"{idx}. {user_name} — {score} {word}\n"
-    result_message += "\nНаш чат для игры в крокодил @game_crocochat"
+    result_message += "\nНаш чат для игры в крокодил @game_public_chat. Присоединяйтесь к нам!"
     return dict(text=result_message, parse_mode="HTML")
 
 
@@ -143,5 +143,5 @@ async def get_chat_stats(chat_id):
         score = data["score"] - fines
         word = get_correct_word_form(score)
         result_message += f"{idx}. {user_name} — {score} {word}\n"
-    result_message += "\nНаш чат для игры в крокодил @game_crocochat"
+    result_message += "\nНаш чат для игры в крокодил @game_public_chat. Присоединяйтесь к нам!"
     return dict(text=result_message, parse_mode="HTML")
