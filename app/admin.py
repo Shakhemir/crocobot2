@@ -47,14 +47,15 @@ def make_active_chats_markup(offset=0, refresh_list=False):
         if game is None:
             continue
         prefix = "🟢" if game.active else "🔴"
-        if game.topic_id is None:
-            chat_id = game.chat_id
-            chat_title = game.chat_title
-        else:
-            chat_id = f"{game.chat_id}-{game.topic_id}"
-            chat_title = f"{game.chat_title} / {game.topic_name}"
+        chat_title = (
+            f"{game.chat_title} / {game.topic_name}"
+            if game.topic_id
+            else game.chat_title
+        )
+        if "post" in game.game_chat_id:
+            chat_title += " post" + game.game_chat_id.split("post")[1]
         chat_btn = InlineKeyboardButton(
-            f"{prefix} {chat_title}", callback_data=f"chat_info{chat_id}"
+            f"{prefix} {chat_title}", callback_data=f"chat_info{game.game_chat_id}"
         )
         chats_markup.add(chat_btn)
 
@@ -135,7 +136,9 @@ async def make_tester_game_stats(chat_id: str):
     refresh_btn = InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh{chat_id}")
     close_btn = InlineKeyboardButton("✖️", callback_data="close")
     markup.add(refresh_btn, close_btn)
-    return dict(text=str(chat_game), reply_markup=markup)
+    active = "🟢" if chat_game.active else "🔴"
+    text = f"{active} <b>{chat_game.chat_title}</b>\n{chat_game}"
+    return dict(text=text, reply_markup=markup, parse_mode="html")
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("chat_info"))
