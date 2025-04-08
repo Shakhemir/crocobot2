@@ -1,7 +1,7 @@
-from telebot import util
-from typing import Any
+from telebot import util, types, asyncio_helper
+from typing import Any, Union, Optional, List
 from telebot.types import Message, CallbackQuery
-from telebot.async_telebot import AsyncTeleBot
+from telebot.async_telebot import AsyncTeleBot, REPLY_MARKUP_TYPES
 from telebot.asyncio_handler_backends import ContinueHandling
 from telebot.asyncio_handler_backends import State, StatesGroup
 
@@ -34,6 +34,49 @@ class MyTeleBot(AsyncTeleBot):
                 func=lambda call: call.message.chat.id in self.tester_ids,
             )
         )
+
+    async def send_message(
+        self,
+        chat_id: Union[int, str],
+        text: str,
+        parse_mode: Optional[str] = None,
+        entities: Optional[List[types.MessageEntity]] = None,
+        disable_web_page_preview: Optional[bool] = None,
+        disable_notification: Optional[bool] = None,
+        protect_content: Optional[bool] = None,
+        reply_to_message_id: Optional[int] = None,
+        allow_sending_without_reply: Optional[bool] = None,
+        reply_markup: Optional[REPLY_MARKUP_TYPES] = None,
+        timeout: Optional[int] = None,
+        message_thread_id: Optional[int] = None,
+        reply_parameters: Optional[types.ReplyParameters] = None,
+        link_preview_options: Optional[types.LinkPreviewOptions] = None,
+        business_connection_id: Optional[str] = None,
+        message_effect_id: Optional[str] = None,
+        allow_paid_broadcast: Optional[bool] = None,
+    ) -> types.Message:
+        try:
+            return await super().send_message(
+                chat_id,
+                text,
+                parse_mode,
+                entities,
+                disable_web_page_preview,
+                disable_notification,
+                protect_content,
+                reply_to_message_id,
+                allow_sending_without_reply,
+                reply_markup,
+                timeout,
+                message_thread_id,
+                reply_parameters,
+                link_preview_options,
+                business_connection_id,
+                message_effect_id,
+                allow_paid_broadcast,
+            )
+        except asyncio_helper.ApiTelegramException as e:
+            print(e)
 
     async def message_to_tester(self, msg: str, place: str = None):
         """
