@@ -76,7 +76,7 @@ class MyTeleBot(AsyncTeleBot):
                 allow_paid_broadcast,
             )
         except asyncio_helper.ApiTelegramException as e:
-            print(e)
+            print(f"Error in send_message\n{e}\n{chat_id=}, {text=}\n")
 
     async def message_to_tester(self, msg: str, place: str = None):
         """
