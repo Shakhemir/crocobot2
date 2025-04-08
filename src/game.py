@@ -60,16 +60,24 @@ class Timer:
 
 class Game:
     def __init__(
-        self, message: Message = None, word_gen_func=None, save_game_func=None, **kwargs
+        self,
+        game_chat_id: str,
+        message: Message = None,
+        word_gen_func=None,
+        save_game_func=None,
+        **kwargs,
     ):
+        self.game_chat_id = game_chat_id  # этот айди используется как ключ в словаре games и в именовании файла .pkl
         self._word_gen_func = word_gen_func  # Функция генерации случайного слова
         self._save_game_func = save_game_func  # Функция сохранения состояния игры
 
         # Информация о чате, где проходит игра
         self.chat_id = self.chat_title = self.topic_id = self.topic_name = None
+        self.msg_kwargs = {}  # kwargs для отправки сообщений в бот
         if message:
             self.chat_id = message.chat.id
             self.define_chat_name(message)
+            self.define_msg_kwargs(message)
         self.active = False  # Активна ли игра
         self.used_words = set()  # Множество угаданных слов
         self.game_timer: Timer | None = None  # Таймер игры
@@ -93,6 +101,15 @@ class Game:
                 self.topic_name = message.reply_to_message.forum_topic_created.name
         else:
             self.topic_id = self.topic_name = None
+
+    def define_msg_kwargs(self, message: Message):
+        if message.is_topic_message:
+            self.msg_kwargs.update(message_thread_id=message.message_thread_id)
+        elif (
+            message.reply_to_message
+            and message.reply_to_message.json["from"]["id"] == 777000
+        ):
+            self.msg_kwargs.update(reply_to_message_id=message.reply_to_message.id)
 
     async def save_game(self):
         """Сохранение состояния игры"""
@@ -148,12 +165,9 @@ class Game:
         self.game_timer = None
         self.exclusive_user = None
         self.answers_set.clear()
-        kwargs = {}
         if self.active:
-            if self.topic_id:
-                kwargs.update(message_thread_id=self.topic_id)
-            await end_game_func(self, **kwargs)
-        self.active = False
+            self.active = False
+            await end_game_func(self)
         await self.save_game()
 
     def save_state(self):

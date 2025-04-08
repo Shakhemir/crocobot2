@@ -36,26 +36,32 @@ def is_admin_message(message: Message):
 
 
 async def save_game(game: Game):
-    file_name = (
-        game.chat_id if game.topic_id is None else f"{game.chat_id}-{game.topic_id}"
-    )
-    async with aiofiles.open(f"{settings.STATE_SAVE_DIR}{file_name}.pkl", "wb") as f:
+    async with aiofiles.open(
+        f"{settings.STATE_SAVE_DIR}{game.game_chat_id}.pkl", "wb"
+    ) as f:
         await f.write(pickle.dumps(game.save_state()))
 
 
+def get_game_chat_id(message: Message | str) -> str:
+    """Формирует chat_id для чата игры с учетом топиков и постов канала"""
+    if isinstance(message, str):  # возвращает как есть
+        return message
+    if message.is_topic_message:  # чат топика
+        return f"{message.chat.id}-{message.message_thread_id}"
+    if (
+        message.reply_to_message
+        and message.reply_to_message.json["from"]["id"] == 777000
+    ):
+        # чат поста канала
+        return f"{message.chat.id}-post-{message.reply_to_message.id}"
+    return str(message.chat.id)  # обычный чат
+
+
 async def get_game(message: Message | str, define_name: bool = None):
-    chat_id: str = (
-        message
-        if isinstance(message, str)
-        else (
-            str(message.chat.id)
-            if not message.is_topic_message
-            else f"{message.chat.id}-{message.message_thread_id}"
-        )
-    )
+    chat_id = get_game_chat_id(message)
     game = games.get(chat_id)
     if game is None:
-        game = Game(message, get_random_word, save_game)
+        game = Game(chat_id, message, get_random_word, save_game)
         games[chat_id] = game
         await save_game(game)
     elif define_name:
@@ -71,7 +77,7 @@ async def load_games(**kwargs):
         if (
             ext == "pkl"
             and filename.startswith("-")
-            and filename.replace("-", "").isdigit()
+            and filename.replace("-", "").replace("post", "").isdigit()
         ):
             chat_id = filename
             try:
@@ -82,6 +88,7 @@ async def load_games(**kwargs):
                     state = pickle.loads(content)
                     restored_game = await Game.load_state(
                         state,
+                        game_chat_id=filename,
                         word_gen_func=get_random_word,
                         save_game_func=save_game,
                         **kwargs,

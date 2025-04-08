@@ -28,35 +28,37 @@ async def start_command(message: Message):
     """Старт игры"""
     chat_id = message.chat.id
     chat_game = await get_game(message, define_name=True)
-    kwargs = {}
-    if message.is_topic_message:
-        kwargs.update(message_thread_id=message.message_thread_id)
     if chat_game:  # Если игра уже активна
-        return await bot.send_message(chat_id, **ui.get_game_already_started_message())
-    await start_game(chat_game, chat_id, message.from_user, **kwargs)
+        return await bot.send_message(
+            chat_id, **ui.get_game_already_started_message(), **chat_game.msg_kwargs
+        )
+    await start_game(chat_game, chat_id, message.from_user)
     game_time = (chat_game.game_timer.interval + 29) // 60
     log_game("Игра началась", chat_game, message.from_user)
     return await bot.send_message(
-        chat_id, **ui.get_start_game_message(message.from_user, game_time), **kwargs
+        chat_id,
+        **ui.get_start_game_message(message.from_user, game_time),
+        **chat_game.msg_kwargs,
     )
 
 
-async def start_game(game, chat_id, user, **kwargs):
+async def start_game(game, chat_id, user):
     await game.start_game(user, end_game)
     if game.exclusive_user and await inc_user_fine(game):  # Проверка на штраф
         args = game.exclusive_user, game.exclusive_user_name
         log_game("Получил штраф", game, args)
-        await bot.send_message(chat_id, **ui.get_fault_message(*args), **kwargs)
+        await bot.send_message(
+            chat_id, **ui.get_fault_message(*args), **game.msg_kwargs
+        )
 
 
 @bot.message_handler(commands=["stats_global"])
 async def stats_global(message: Message):
     """Общая статистика игры"""
     result = await get_global_stats()
-    kwargs = {}
-    if message.is_topic_message:
-        kwargs.update(message_thread_id=message.message_thread_id)
-    return await bot.send_message(message.chat.id, **result, **kwargs)
+    return await bot.send_message(
+        message.chat.id, reply_to_message_id=message.message_id, **result
+    )
 
 
 @bot.message_handler(commands=["stats"], func=is_group_command)
@@ -66,13 +68,15 @@ async def stats(message: Message):
     kwargs = {}
     if message.is_topic_message:
         kwargs.update(message_thread_id=message.message_thread_id)
-    return await bot.send_message(message.chat.id, **result, **kwargs)
+    return await bot.send_message(
+        message.chat.id, reply_to_message_id=message.message_id, **result
+    )
 
 
-async def end_game(game, **kwargs):
+async def end_game(game):
     """Отправляем сообщение об окончании игры"""
     await bot.send_message(
-        game.chat_id, **ui.get_end_game_message(game.current_word), **kwargs
+        game.chat_id, **ui.get_end_game_message(game.current_word), **game.msg_kwargs
     )
 
 
@@ -105,7 +109,7 @@ async def chat_messages(message: Message):
         await bot.send_message(
             chat_id,
             **ui.get_new_game_message(message.from_user, chat_game.current_word),
-            **kwargs,
+            **chat_game.msg_kwargs,
         )
 
 
@@ -140,7 +144,9 @@ async def callback_handler(call: CallbackQuery):
         )
         game_time = (chat_game.game_timer.interval + 29) // 60
         await bot.send_message(
-            chat_id, **ui.get_lead_game_message(call.from_user, game_time), **kwargs
+            chat_id,
+            **ui.get_lead_game_message(call.from_user, game_time),
+            **chat_game.msg_kwargs,
         )
     elif call.data == "view_word" and call.from_user.id in TESTERS_IDS + (
         chat_game.current_leader,
