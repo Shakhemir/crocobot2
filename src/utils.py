@@ -6,7 +6,7 @@ import pickle
 import aiofiles
 from telebot.types import Message, User
 from src.game import Game
-from src.config import TESTERS_IDS, bot_username, games
+from src.config import TESTERS_IDS, bot_username, games, sync_bot
 from src.config import logger, settings
 from app.words_generator import get_random_word
 from app.statistics import inc_user_stat
@@ -70,6 +70,15 @@ async def get_game(message: Message | str, define_name: bool = None):
     return game
 
 
+def log_error(msg: str):
+    for tg_id in TESTERS_IDS:
+        try:
+            sync_bot.send_message(tg_id, msg)
+        except:
+            pass
+        logger.error(msg)
+
+
 async def load_games(**kwargs):
     loaded_game_states = {}
     for filename_pkl in os.listdir(settings.STATE_SAVE_DIR):
@@ -94,7 +103,7 @@ async def load_games(**kwargs):
                         **kwargs,
                     )
             except EOFError:
-                logger.error("Ошибка при загрузке файла %r", filename_pkl)
+                await log_error("Ошибка при загрузке файла %r" % filename_pkl)
             else:
                 loaded_game_states[chat_id] = restored_game
 

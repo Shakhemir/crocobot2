@@ -12,10 +12,15 @@ def print_models():
 
 def generate_answer(prompt: str):
     messages = [{"role": "user", "content": prompt}]
-    response = client.chat.completions.create(
-        model=settings.GPT_MODEL, messages=messages
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model=settings.GPT_MODEL, messages=messages
+        )
+    except OpenAIError as e:
+        print(e)
+        raise Exception(e)
+    else:
+        return response.choices[0].message.content
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@
 
 import asyncio
 import logging.handlers
+from telebot import TeleBot
 from telebot.asyncio_storage import StatePickleStorage
 from telebot.types import (
     BotCommand,
@@ -24,10 +25,12 @@ async def init_telegram_bot():
     bot = MyTeleBot(
         settings.BOT_TOKEN, tester_ids=TESTERS_IDS, state_storage=StatePickleStorage()
     )
+    sync_bot = TeleBot(settings.BOT_TOKEN)
     await bot.init_common_sate()
     get_me = await bot.get_me()
     bot_username = get_me.username
     bot_title = get_me.full_name
+    print(f"@{bot_username} {bot_title}")
     await bot.set_my_commands(
         [
             BotCommand("start", "Начало"),
@@ -52,10 +55,10 @@ async def init_telegram_bot():
             ],
             scope=BotCommandScopeChat(tester_id),
         )
-    return bot, bot_username, bot_title
+    return bot, bot_username, bot_title, sync_bot
 
 
-bot, bot_username, bot_title = asyncio.run(init_telegram_bot())
+bot, bot_username, bot_title, sync_bot = asyncio.run(init_telegram_bot())
 
 
 def get_logger():
@@ -65,7 +68,6 @@ def get_logger():
     )
     file_formatter = logging.Formatter("%(asctime)s :: %(message)s")
     file_handler.setFormatter(file_formatter)
-    file_handler.setLevel(settings.LOG_LEVEL)
     logger = logging.getLogger(__name__)
     logger.setLevel(settings.LOG_LEVEL)
     logger.addHandler(file_handler)
