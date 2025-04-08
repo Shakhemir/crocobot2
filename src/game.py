@@ -77,7 +77,6 @@ class Game:
         if message:
             self.chat_id = message.chat.id
             self.define_chat_name(message)
-            self.define_msg_kwargs(message)
         self.active = False  # Активна ли игра
         self.used_words = set()  # Множество угаданных слов
         self.game_timer: Timer | None = None  # Таймер игры
@@ -101,6 +100,7 @@ class Game:
                 self.topic_name = message.reply_to_message.forum_topic_created.name
         else:
             self.topic_id = self.topic_name = None
+        self.define_msg_kwargs(message)
 
     def define_msg_kwargs(self, message: Message):
         if message.is_topic_message:
