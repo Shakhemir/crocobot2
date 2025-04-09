@@ -11,6 +11,7 @@ from telebot.types import (
     BotCommandScopeAllGroupChats,
     BotCommandScopeChat,
     BotCommandScopeAllPrivateChats,
+    BotCommandScopeChatAdministrators,
 )
 from src.my_telebot import MyTeleBot
 from .settings import settings
@@ -40,7 +41,6 @@ async def init_telegram_bot():
     await bot.set_my_commands(
         [
             BotCommand("start", "Начало игры"),
-            # BotCommand("check", "Тесты"),
             BotCommand("stats", "Статистика по чату"),
             BotCommand("stats_global", "Глобальная статистика"),
         ],
@@ -59,6 +59,18 @@ async def init_telegram_bot():
 
 
 bot, bot_username, bot_title, sync_bot = asyncio.run(init_telegram_bot())
+
+
+async def set_chat_admin_commands(chat_id):
+    await bot.set_my_commands(
+        [
+            BotCommand("start", "Начало игры"),
+            BotCommand("stop", "Остановить игру"),
+            BotCommand("stats", "Статистика по чату"),
+            BotCommand("stats_global", "Глобальная статистика"),
+        ],
+        scope=BotCommandScopeChatAdministrators(chat_id=chat_id),
+    )
 
 
 def get_logger():

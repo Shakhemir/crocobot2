@@ -7,7 +7,7 @@ import aiofiles
 from telebot.types import Message, User
 from src.game import Game
 from src.config import TESTERS_IDS, bot_username, games, sync_bot
-from src.config import logger, settings
+from src.config import logger, settings, set_chat_admin_commands
 from app.words_generator import get_random_word
 from app.statistics import inc_user_stat
 
@@ -95,6 +95,7 @@ async def load_games(**kwargs):
                 ) as f:
                     content = await f.read()
                     state = pickle.loads(content)
+                    await set_chat_admin_commands(state["chat_id"])
                     restored_game = await Game.load_state(
                         state,
                         game_chat_id=filename,

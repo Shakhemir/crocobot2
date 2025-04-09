@@ -42,6 +42,23 @@ async def start_command(message: Message):
     )
 
 
+@bot.message_handler(commands=["stop"], func=is_group_command)
+async def stop_command(message: Message):
+    """Стоп игры – команда для администраторов чата"""
+    print("stop_command")
+    chat_id = message.chat.id
+    print(chat_id)
+    print(message.from_user.id, message.from_user.username, message.from_user.full_name)
+    chat_member = await bot.get_chat_member(chat_id, message.from_user.id)
+    print(chat_member.status)
+    if (
+        chat_member.status in ("creator", "administrator")
+        or message.from_user.username == "GroupAnonymousBot"
+    ):
+        chat_game = await get_game(message, define_name=True)
+        await chat_game.end_game(end_game)
+
+
 async def start_game(game, chat_id, user):
     await game.start_game(user, end_game)
     if game.exclusive_user and await inc_user_fine(game):  # Проверка на штраф
