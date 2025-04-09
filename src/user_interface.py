@@ -124,7 +124,7 @@ def gpt_injection(prompt: str = None) -> str:
         except FileNotFoundError:
             prompt = ""
 
-    if prompt:
+    if prompt and randint(1, 5) == 1:
         try:
             gpt_joke = "\n" + gpt.generate_answer(prompt) + "\n"
         except Exception as e:
