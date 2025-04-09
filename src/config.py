@@ -72,8 +72,8 @@ async def set_chat_admin_commands(chat_id):
             ],
             scope=BotCommandScopeChatAdministrators(chat_id=chat_id),
         )
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error in set_chat_admin_commands\n{e}\n{chat_id=}")
 
 
 def get_logger():
