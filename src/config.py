@@ -62,15 +62,18 @@ bot, bot_username, bot_title, sync_bot = asyncio.run(init_telegram_bot())
 
 
 async def set_chat_admin_commands(chat_id):
-    await bot.set_my_commands(
-        [
-            BotCommand("start", "Начало игры"),
-            BotCommand("stop", "Остановить игру"),
-            BotCommand("stats", "Статистика по чату"),
-            BotCommand("stats_global", "Глобальная статистика"),
-        ],
-        scope=BotCommandScopeChatAdministrators(chat_id=chat_id),
-    )
+    try:
+        await bot.set_my_commands(
+            [
+                BotCommand("start", "Начало игры"),
+                BotCommand("stop", "Остановить игру"),
+                BotCommand("stats", "Статистика по чату"),
+                BotCommand("stats_global", "Глобальная статистика"),
+            ],
+            scope=BotCommandScopeChatAdministrators(chat_id=chat_id),
+        )
+    except Exception:
+        pass
 
 
 def get_logger():
