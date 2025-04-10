@@ -5,6 +5,7 @@ from telebot.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
+from telebot import util
 from src.config import bot, games, settings
 from src.utils import is_admin_message, is_group_command, get_game
 
@@ -137,7 +138,8 @@ async def make_tester_game_stats(chat_id: str):
     close_btn = InlineKeyboardButton("✖️", callback_data="close")
     markup.add(refresh_btn, close_btn)
     active = "🟢" if chat_game.active else "🔴"
-    text = f"{active} <b>{chat_game.chat_title}</b>\n{chat_game}"
+    chat_info = util.escape(str(chat_game))
+    text = f"{active} <b>{chat_game.chat_title}</b>\n{chat_info}"
     return dict(text=text, reply_markup=markup, parse_mode="html")
 
 
