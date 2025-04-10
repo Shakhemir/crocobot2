@@ -78,6 +78,9 @@ async def set_chat_admin_commands(chat_id):
             return True
         elif ex.error_code in (400, 403):
             print(f"Error in set_chat_admin_commands\n{ex}\n{chat_id=}")
+    except Exception as e:
+        print("Exception")
+        print(e)
     else:
         return True
 
