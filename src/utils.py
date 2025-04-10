@@ -84,6 +84,7 @@ async def load_games(**kwargs):
     chats_count = 0
     blocked_chats = 0
     for filename_pkl in os.listdir(settings.STATE_SAVE_DIR):
+        restored_game = None
         filename, ext = filename_pkl.split(".")
         if (
             ext == "pkl"
@@ -111,7 +112,8 @@ async def load_games(**kwargs):
             except EOFError:
                 await log_error("Ошибка при загрузке файла %r" % filename_pkl)
             else:
-                loaded_game_states[chat_id] = restored_game
+                if restored_game is not None:
+                    loaded_game_states[chat_id] = restored_game
     print(f"{chats_count=}, {blocked_chats=}")
     return loaded_game_states
 
