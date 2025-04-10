@@ -1,4 +1,4 @@
-"""Разные вспомоганательные утилиты"""
+"""Разные вспомогательные утилиты"""
 
 import re
 import os
@@ -81,6 +81,8 @@ def log_error(msg: str):
 
 async def load_games(**kwargs):
     loaded_game_states = {}
+    chats_count = 0
+    blocked_chats = 0
     for filename_pkl in os.listdir(settings.STATE_SAVE_DIR):
         filename, ext = filename_pkl.split(".")
         if (
@@ -95,19 +97,22 @@ async def load_games(**kwargs):
                 ) as f:
                     content = await f.read()
                     state = pickle.loads(content)
-                    await set_chat_admin_commands(state["chat_id"])
-                    restored_game = await Game.load_state(
-                        state,
-                        game_chat_id=filename,
-                        word_gen_func=get_random_word,
-                        save_game_func=save_game,
-                        **kwargs,
-                    )
+                    if await set_chat_admin_commands(state["chat_id"]):
+                        chats_count += 1
+                        restored_game = await Game.load_state(
+                            state,
+                            game_chat_id=filename,
+                            word_gen_func=get_random_word,
+                            save_game_func=save_game,
+                            **kwargs,
+                        )
+                    else:
+                        blocked_chats += 1
             except EOFError:
                 await log_error("Ошибка при загрузке файла %r" % filename_pkl)
             else:
                 loaded_game_states[chat_id] = restored_game
-
+    print(f"{chats_count=}, {blocked_chats=}")
     return loaded_game_states
 
 

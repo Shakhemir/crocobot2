@@ -74,6 +74,8 @@ async def set_chat_admin_commands(chat_id):
         )
     except Exception as e:
         print(f"Error in set_chat_admin_commands\n{e}\n{chat_id=}")
+    else:
+        return True
 
 
 def get_logger():
