@@ -6,6 +6,7 @@ import asyncio
 import logging.handlers
 from telebot import TeleBot
 from telebot.asyncio_storage import StatePickleStorage
+from telebot.apihelper import ApiTelegramException
 from telebot.types import (
     BotCommand,
     BotCommandScopeAllGroupChats,
@@ -72,8 +73,11 @@ async def set_chat_admin_commands(chat_id):
             ],
             scope=BotCommandScopeChatAdministrators(chat_id=chat_id),
         )
-    except Exception as e:
-        print(f"Error in set_chat_admin_commands\n{e}\n{chat_id=}")
+    except ApiTelegramException as ex:
+        if ex.error_code == 429:
+            return True
+        elif ex.error_code in (400, 403):
+            print(f"Error in set_chat_admin_commands\n{ex}\n{chat_id=}")
     else:
         return True
 
