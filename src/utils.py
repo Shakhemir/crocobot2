@@ -108,6 +108,7 @@ async def load_games(**kwargs):
                             **kwargs,
                         )
                     else:
+                        os.remove(settings.STATE_SAVE_DIR + filename_pkl)
                         blocked_chats += 1
             except EOFError:
                 await log_error("Ошибка при загрузке файла %r" % filename_pkl)

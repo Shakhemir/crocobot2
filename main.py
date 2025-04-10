@@ -188,7 +188,6 @@ async def callback_handler(call: CallbackQuery):
 async def start_bot():
     loaded_games = await load_games(end_game_func=end_game)
     games.update(loaded_games)
-    print(f"{games=}")
     await bot.infinity_polling()
 
 
