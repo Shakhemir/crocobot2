@@ -69,7 +69,7 @@ async def start_game(game, chat_id, user):
         )
 
 
-@bot.message_handler(commands=["stats_global"])
+@bot.message_handler(commands=["stats_global"], func=is_group_command)
 async def stats_global(message: Message):
     """Общая статистика игры"""
     result = await get_global_stats()
