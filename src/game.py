@@ -105,11 +105,8 @@ class Game:
     def define_msg_kwargs(self, message: Message):
         if message.is_topic_message:
             self.msg_kwargs.update(message_thread_id=message.message_thread_id)
-        elif (
-            message.reply_to_message
-            and message.reply_to_message.json["from"]["id"] == 777000
-        ):
-            self.msg_kwargs.update(reply_to_message_id=message.reply_to_message.id)
+        elif message.message_thread_id:
+            self.msg_kwargs.update(reply_to_message_id=message.message_thread_id)
 
     async def save_game(self):
         """Сохранение состояния игры"""

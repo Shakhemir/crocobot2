@@ -48,12 +48,9 @@ def get_game_chat_id(message: Message | str) -> str:
         return message
     if message.is_topic_message:  # чат топика
         return f"{message.chat.id}-{message.message_thread_id}"
-    if (
-        message.reply_to_message
-        and message.reply_to_message.json["from"]["id"] == 777000
-    ):
+    if message.message_thread_id is not None:
         # чат поста канала
-        return f"{message.chat.id}-post-{message.reply_to_message.id}"
+        return f"{message.chat.id}-post-{message.message_thread_id}"
     return str(message.chat.id)  # обычный чат
 
 
@@ -102,7 +99,7 @@ async def load_games(**kwargs):
                         chats_count += 1
                         restored_game = await Game.load_state(
                             state,
-                            game_chat_id=filename,
+                            game_chat_id=chat_id,
                             word_gen_func=get_random_word,
                             save_game_func=save_game,
                             **kwargs,
