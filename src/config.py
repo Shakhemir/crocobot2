@@ -80,6 +80,7 @@ async def set_chat_admin_commands(chat_id):
     except Exception as e:
         print("Exception")
         print(e)
+        return True
     else:
         return True
 
