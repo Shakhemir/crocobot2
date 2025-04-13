@@ -89,23 +89,6 @@ def make_active_chats_markup(offset=0, refresh_list=False):
     return dict(text=text, parse_mode="html", reply_markup=chats_markup)
 
 
-@bot.message_handler(commands=["check"], func=is_group_command)
-async def check_game(message: Message):
-    """Тестируем"""
-    chat_game = await get_game(message)
-    active = "🟢" if chat_game.active else "🔴"
-    if gt := chat_game.game_timer:
-        interval, time_left, time_remain = gt.interval, gt.time_left, gt.time_remain
-        gt_text = f"{interval}s: {time_left}s, {time_remain}s"
-    else:
-        gt_text = "No game timer"
-    return await bot.send_message(
-        message.chat.id,
-        f"{active} {gt_text}\nСлово: {chat_game.current_word}\n"
-        f"{chat_game.used_words=}",
-    )
-
-
 @bot.message_handler(content_types=["text"], func=is_admin_message)
 async def admins_messages(message: Message):
     if message.text.startswith("-") and message.text[1:].isdigit():

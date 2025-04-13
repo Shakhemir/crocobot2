@@ -52,7 +52,6 @@ async def init_telegram_bot():
             [
                 BotCommand("start", "Начало"),
                 BotCommand("chats", "Активные чаты"),
-                BotCommand("admin", "Команды админа"),
             ],
             scope=BotCommandScopeChat(tester_id),
         )

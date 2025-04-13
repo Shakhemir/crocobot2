@@ -27,7 +27,7 @@ async def start_command(message: Message):
 async def start_command(message: Message):
     """Старт игры"""
     chat_id = message.chat.id
-    chat_game = await get_game(message, define_name=True)
+    chat_game = await get_game(message, start_game=True)
     if chat_game:  # Если игра уже активна
         return await bot.send_message(
             chat_id, **ui.get_game_already_started_message(), **chat_game.msg_kwargs
@@ -55,8 +55,9 @@ async def stop_command(message: Message):
         chat_member.status in ("creator", "administrator")
         or message.from_user.username == "GroupAnonymousBot"
     ):
-        chat_game = await get_game(message, define_name=True)
-        await chat_game.end_game(end_game)
+        chat_game = await get_game(message)
+        if chat_game:
+            await chat_game.end_game(end_game)
 
 
 async def start_game(game, chat_id, user):
@@ -108,9 +109,6 @@ async def chat_messages(message: Message):
     log = f"{chat_id} `{message.chat.title}` {message.from_user.full_name} :: {message.text}"
     print(log)
     chat_game = await get_game(message)
-    kwargs = {}
-    if message.is_topic_message:
-        kwargs.update(message_thread_id=message.message_thread_id)
 
     # Если игра не активна либо пишет ведущий, то выходим
     if not chat_game or message.from_user.id == chat_game.current_leader:
@@ -138,10 +136,8 @@ async def edited_chat_messages(message: Message):
 @bot.callback_query_handler(func=lambda call: True)
 async def callback_handler(call: CallbackQuery):
     chat_id = call.message.chat.id
-    chat_game = await get_game(call.message)
-    kwargs = {}
-    if call.message.is_topic_message:
-        kwargs.update(message_thread_id=call.message.message_thread_id)
+    chat_game = await get_game(call.message, start_game=True)
+
     if call.data == "want_to_lead" and not chat_game:
         if (
             chat_game.exclusive_timer

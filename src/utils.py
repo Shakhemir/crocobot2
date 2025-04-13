@@ -54,14 +54,16 @@ def get_game_chat_id(message: Message | str) -> str:
     return str(message.chat.id)  # обычный чат
 
 
-async def get_game(message: Message | str, define_name: bool = None):
+async def get_game(message: Message | str, start_game: bool = None):
     chat_id = get_game_chat_id(message)
-    game = games.get(chat_id)
-    if game is None:
+    game: Game = games.get(chat_id)
+    if (
+        game is None and start_game
+    ):  # Если игра не найдена, а надо стартовать, то создаем
         game = Game(chat_id, message, get_random_word, save_game)
         games[chat_id] = game
         await save_game(game)
-    elif define_name:
+    elif start_game:
         game.define_chat_name(message)
         await save_game(game)
     return game
