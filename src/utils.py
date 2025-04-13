@@ -78,18 +78,50 @@ def log_error(msg: str):
         logger.error(msg)
 
 
-async def load_game(filename):
-    async with aiofiles.open(filename, "rb") as f:
-        content = await f.read()
-        state = pickle.loads(content)
-        if await set_chat_admin_commands(state["chat_id"]):
+async def load_game(
+    filename: str, game_chat_id: str, chats_set_commands: set, **kwargs
+) -> Game | None:
+    """Загружает файл игры, если получается.
+    Либо удаляет его если не актуальный или бот заблокирован в чате.
+    Также делает попытку установить команды админам.
+    """
+
+    def remove_chat_file(chat_filename):
+        print("removing...")
+        os.remove(settings.STATE_SAVE_DIR + chat_filename)
+
+    print(f"load_game: {filename=} {game_chat_id=} {chats_set_commands=}")
+    try:
+        async with aiofiles.open(settings.STATE_SAVE_DIR + filename, "rb") as f:
+            content = await f.read()
+            state = pickle.loads(content)
+            if (
+                not state["active"]
+                and not state["exclusive_timer"]
+                and not state["used_words"]
+            ):
+                # В чате не было игры, можно удалять
+                return remove_chat_file(filename)
+
+            chat_id = state["chat_id"]
+            if chat_id not in chats_set_commands:
+                if chat_available := await set_chat_admin_commands(state["chat_id"]):
+                    chats_set_commands.add(chat_id)
+                elif chat_available == -1:  # Чат не доступен, скорее всего заблокирован
+                    return remove_chat_file(filename)
+
+            # if chat_id in chats_set_commands:
+            #     if state["active"] or state["exclusive_timer"]:
             restored_game = await Game.load_state(
                 state,
-                game_chat_id=filename,
+                game_chat_id=game_chat_id,
                 word_gen_func=get_random_word,
                 save_game_func=save_game,
                 **kwargs,
             )
+            return restored_game
+    except EOFError:
+        log_error("Ошибка при загрузке файла %r" % filename)
 
 
 async def load_games(**kwargs):
@@ -98,7 +130,6 @@ async def load_games(**kwargs):
     blocked_chats = 0
     chats_set = set()
     for filename_pkl in os.listdir(settings.STATE_SAVE_DIR):
-        restored_game = None
         filename, ext = filename_pkl.split(".")
         if (
             ext == "pkl"
@@ -106,33 +137,12 @@ async def load_games(**kwargs):
             and filename.replace("-", "").replace("post", "").isdigit()
         ):
             chat_id = filename
-            try:
-                async with aiofiles.open(
-                    settings.STATE_SAVE_DIR + filename_pkl, "rb"
-                ) as f:
-                    content = await f.read()
-                    state = pickle.loads(content)
-                    if state["chat_id"] in chats_set or await set_chat_admin_commands(
-                        state["chat_id"]
-                    ):
-                        chats_set.add(state["chat_id"])
-                        chats_count += 1
-                        if state["active"] or state["exclusive_timer"]:
-                            restored_game = await Game.load_state(
-                                state,
-                                game_chat_id=chat_id,
-                                word_gen_func=get_random_word,
-                                save_game_func=save_game,
-                                **kwargs,
-                            )
-                    else:
-                        os.remove(settings.STATE_SAVE_DIR + filename_pkl)
-                        blocked_chats += 1
-            except EOFError:
-                await log_error("Ошибка при загрузке файла %r" % filename_pkl)
+            restored_game = await load_game(filename_pkl, chat_id, chats_set)
+            if restored_game is not None:
+                chats_count += 1
+                loaded_game_states[chat_id] = restored_game
             else:
-                if restored_game is not None:
-                    loaded_game_states[chat_id] = restored_game
+                blocked_chats += 1
     print(f"{chats_count=}, {blocked_chats=}")
     return loaded_game_states
 

@@ -62,6 +62,11 @@ bot, bot_username, bot_title, sync_bot = asyncio.run(init_telegram_bot())
 
 
 async def set_chat_admin_commands(chat_id):
+    """
+    Устанавливает команды для админов чата.
+    Заодно проверяет заблокирован ли бот в чате.
+    Если заблокирован, то возвращаем None
+    """
     try:
         await bot.set_my_commands(
             [
@@ -72,17 +77,18 @@ async def set_chat_admin_commands(chat_id):
             ],
             scope=BotCommandScopeChatAdministrators(chat_id=chat_id),
         )
+        return True
     except ApiTelegramException as ex:
-        if ex.error_code == 429:
-            return True
-        elif ex.error_code in (400, 403):
+        print("ApiTelegramException", ex.error_code)
+        if ex.error_code == 429:  # Защита телеграма от спама
+            await asyncio.sleep(ex.result_json["parameters"]["retry_after"])
+            return
+        elif ex.error_code in (400, 403):  # Бот заблокирован
             print(f"Error in set_chat_admin_commands\n{ex}\n{chat_id=}")
+            return -1
     except Exception as e:
         print("Exception")
         print(e)
-        return True
-    else:
-        return True
 
 
 def get_logger():
