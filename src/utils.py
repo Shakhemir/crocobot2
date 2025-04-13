@@ -78,10 +78,25 @@ def log_error(msg: str):
         logger.error(msg)
 
 
+async def load_game(filename):
+    async with aiofiles.open(filename, "rb") as f:
+        content = await f.read()
+        state = pickle.loads(content)
+        if await set_chat_admin_commands(state["chat_id"]):
+            restored_game = await Game.load_state(
+                state,
+                game_chat_id=filename,
+                word_gen_func=get_random_word,
+                save_game_func=save_game,
+                **kwargs,
+            )
+
+
 async def load_games(**kwargs):
     loaded_game_states = {}
     chats_count = 0
     blocked_chats = 0
+    chats_set = set()
     for filename_pkl in os.listdir(settings.STATE_SAVE_DIR):
         restored_game = None
         filename, ext = filename_pkl.split(".")
@@ -97,15 +112,19 @@ async def load_games(**kwargs):
                 ) as f:
                     content = await f.read()
                     state = pickle.loads(content)
-                    if await set_chat_admin_commands(state["chat_id"]):
+                    if state["chat_id"] in chats_set or await set_chat_admin_commands(
+                        state["chat_id"]
+                    ):
+                        chats_set.add(state["chat_id"])
                         chats_count += 1
-                        restored_game = await Game.load_state(
-                            state,
-                            game_chat_id=chat_id,
-                            word_gen_func=get_random_word,
-                            save_game_func=save_game,
-                            **kwargs,
-                        )
+                        if state["active"] or state["exclusive_timer"]:
+                            restored_game = await Game.load_state(
+                                state,
+                                game_chat_id=chat_id,
+                                word_gen_func=get_random_word,
+                                save_game_func=save_game,
+                                **kwargs,
+                            )
                     else:
                         os.remove(settings.STATE_SAVE_DIR + filename_pkl)
                         blocked_chats += 1
@@ -134,7 +153,6 @@ async def check_user_answer(message: Message, game: Game):
     user_answer = answer.lower().replace("ё", "е").replace("й", "и")
     if user_answer in game.answers_set:
         return -1
-    game.answers_set.add(user_answer)
 
     normalized_current_word = re.sub(
         r"[^а-яa-z]+",
@@ -153,6 +171,7 @@ async def check_user_answer(message: Message, game: Game):
         await game.add_current_word_to_used(message.from_user)
         await inc_user_stat(game, message.from_user)  # Изменяем статистику
         return True
+    game.answers_set.add(user_answer)  # Добавляем слово в список использованных
 
 
 def log_game(text: str, game: Game, user: User | tuple):
