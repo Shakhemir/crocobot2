@@ -72,7 +72,9 @@ class Game:
         self._save_game_func = save_game_func  # Функция сохранения состояния игры
 
         # Информация о чате, где проходит игра
-        self.chat_id = self.chat_title = self.topic_id = self.topic_name = None
+        self.chat_id = self.chat_title = self.topic_id = self.topic_name = (
+            self.chat_username
+        ) = None
         self.msg_kwargs = {}  # kwargs для отправки сообщений в бот
         if message:
             self.chat_id = message.chat.id
@@ -94,6 +96,9 @@ class Game:
 
     def define_chat_name(self, message: Message):
         self.chat_title = message.chat.title
+        self.chat_username = (
+            "@" + message.chat.username if message.chat.username else None
+        )
         if message.is_topic_message:
             self.topic_id = message.message_thread_id
             if message.reply_to_message.forum_topic_created:

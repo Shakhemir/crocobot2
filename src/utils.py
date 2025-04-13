@@ -137,7 +137,7 @@ async def load_games(**kwargs):
             and filename.replace("-", "").replace("post", "").isdigit()
         ):
             chat_id = filename
-            restored_game = await load_game(filename_pkl, chat_id, chats_set)
+            restored_game = await load_game(filename_pkl, chat_id, chats_set, **kwargs)
             if restored_game is not None:
                 chats_count += 1
                 loaded_game_states[chat_id] = restored_game
