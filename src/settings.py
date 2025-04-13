@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     CHAT_PAGE_SIZE: int
 
     # ChatGPT
+    GPT_INJECTION: bool
     OPEN_API_KEY: str
     GPT_MODEL: str
     PROMPT_FILE: str

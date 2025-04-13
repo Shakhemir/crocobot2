@@ -117,19 +117,18 @@ def gpt_injection(prompt: str = None) -> str:
     когда к ней обращаются. Поэтому не нужно перезагружать бота,
     если изменился промпт.
     """
-    if prompt is None:
-        try:
-            with open(settings.PROMPT_FILE, encoding="utf-8") as f:
-                prompt = f.read().strip()
-        except FileNotFoundError:
-            prompt = ""
+    if settings.GPT_INJECTION:
+        if prompt is None:
+            try:
+                with open(settings.PROMPT_FILE, encoding="utf-8") as f:
+                    prompt = f.read().strip()
+            except FileNotFoundError:
+                prompt = ""
 
-    if prompt and randint(1, 5) == 1:
-        try:
-            gpt_joke = "\n" + gpt.generate_answer(prompt) + "\n"
-        except Exception as e:
-            log_error(str(e))
-            return ""
-        return f"<i>{gpt_joke}</i>"
-    else:
-        return ""
+        if prompt and randint(1, 5) == 1:
+            try:
+                gpt_joke = "\n" + gpt.generate_answer(prompt) + "\n"
+                return f"<i>{gpt_joke}</i>"
+            except Exception as e:
+                log_error(str(e))
+    return ""
