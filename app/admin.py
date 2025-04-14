@@ -169,9 +169,10 @@ async def get_tg_chat_info(chat_id: str):
             creator = admin
     creator_username = "@" + creator.user.username if creator.user.username else ""
     members_count = await bot.get_chat_member_count(chat_id)
+    invite_link = chat.invite_link if chat.invite_link else ""
     text = (
-        f"{username} <b>{chat.title}</b>{chat_description}\n"
-        f"{chat.invite_link}{pinned_message}\n\n"
+        f"{username} <b>{chat.title}</b>\n<i>{chat.type}</i>{chat_description}\n"
+        f"{invite_link}{pinned_message}\n\n"
         f"Creator: {creator_username} <code>{creator.user.full_name}</code>\n"
         f"Admins count: <code>{len(admins)}</code>\n"
         f"Members count: <code>{members_count}</code>\n"
