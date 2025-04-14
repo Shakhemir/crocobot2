@@ -5,6 +5,7 @@ from telebot.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
+from telebot.apihelper import ApiTelegramException
 from telebot import util
 from src.config import bot, games, settings
 from src.utils import is_admin_message, is_group_command, get_game
@@ -133,7 +134,8 @@ async def make_tester_game_stats(chat_id: str):
     markup.add(refresh_btn, tg_chat_btn, close_btn)
     active = "🟢" if chat_game.active else "🔴"
     chat_info = util.escape(str(chat_game))
-    text = f"{active} <b>{chat_game.chat_title}</b>\n{chat_info}"
+    chat_title = util.escape(chat_game.chat_title)
+    text = f"{active} <b>{chat_title}</b>\n{chat_info}"
     return dict(text=text, reply_markup=markup, parse_mode="html")
 
 
@@ -153,29 +155,34 @@ async def get_tg_chat_info(chat_id: str):
     markup.add(close_btn)
     chat = await bot.get_chat(chat_id)
     username = "@" + chat.username if chat.username else ""
-    chat_description = "\n" + chat.description if chat.description else ""
+    chat_title = util.escape(chat.chat_title)
+    chat_description = "\n" + util.escape(chat.description) if chat.description else ""
+    invite_link = chat.invite_link if chat.invite_link else ""
     pinned_message = ""
     if chat.pinned_message:
         pin = (
-            chat.pinned_message.text
+            util.escape(chat.pinned_message.text)
             if chat.pinned_message.content_type == "text"
             else chat.pinned_message.content_type
         )
         pinned_message = "\nPinned: " + pin
-    admins = await bot.get_chat_administrators(chat_id)
-    creator = None
-    for admin in admins:
-        if admin.status == "creator":
-            creator = admin
-    creator_username = "@" + creator.user.username if creator.user.username else ""
-    members_count = await bot.get_chat_member_count(chat_id)
-    invite_link = chat.invite_link if chat.invite_link else ""
-    text = (
-        f"{username} <b>{chat.title}</b>\n<i>{chat.type}</i>{chat_description}\n"
-        f"{invite_link}{pinned_message}\n\n"
-        f"Creator: {creator_username} <code>{creator.user.full_name}</code>\n"
+    try:
+        admins = await bot.get_chat_administrators(chat_id)
+    except ApiTelegramException as e:
+        members_info = str(e)
+    else:
+        creator = None
+        for admin in admins:
+            if admin.status == "creator":
+                creator = admin
+        creator_username = "@" + creator.user.username if creator.user.username else ""
+        members_count = await bot.get_chat_member_count(chat_id)
+        members_info = f"Creator: {creator_username} <code>{util.escape(creator.user.full_name)}</code>\n"
         f"Admins count: <code>{len(admins)}</code>\n"
         f"Members count: <code>{members_count}</code>\n"
+    text = (
+        f"{username} <b>{chat_title}</b>\n<i>{chat.type}</i>{chat_description}\n"
+        f"{invite_link}{pinned_message}\n\n{members_info}"
     )
     return dict(text=text, reply_markup=markup, parse_mode="html")
 
