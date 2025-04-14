@@ -155,7 +155,7 @@ async def get_tg_chat_info(chat_id: str):
     markup.add(close_btn)
     chat = await bot.get_chat(chat_id)
     username = "@" + chat.username if chat.username else ""
-    chat_title = util.escape(chat.chat_title)
+    chat_title = util.escape(chat.title)
     chat_description = "\n" + util.escape(chat.description) if chat.description else ""
     invite_link = chat.invite_link if chat.invite_link else ""
     pinned_message = ""
