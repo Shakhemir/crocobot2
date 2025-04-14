@@ -52,7 +52,7 @@ def make_active_chats_markup(offset=0, refresh_list=False):
         if game.active:
             prefix = "🟢"
         elif game.used_words:
-            prefix = "🔴"
+            prefix = ""
         else:
             prefix = "⚫️"
         if game.chat_username:
@@ -133,7 +133,7 @@ async def make_tester_game_stats(chat_id: str):
     tg_chat_btn = InlineKeyboardButton("…", callback_data=f"tg_chat_info{chat_id}")
     close_btn = InlineKeyboardButton("✖️", callback_data="close")
     markup.add(refresh_btn, tg_chat_btn, close_btn)
-    active = "🟢" if chat_game.active else "🔴"
+    active = "🟢" if chat_game.active else ""
     chat_info = util.escape(str(chat_game))
     chat_title = util.escape(chat_game.chat_title)
     text = f"{active} <b>{chat_title}</b>\n{chat_info}"

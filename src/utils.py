@@ -53,7 +53,10 @@ async def load_game(
 
     def remove_chat_file(chat_filename):
         print("removing...")
-        os.remove(settings.STATE_SAVE_DIR + chat_filename)
+        try:
+            os.remove(settings.STATE_SAVE_DIR + chat_filename)
+        except:
+            pass
 
     print(f"load_game: {filename=} {game_chat_id=} {len(chats_set_commands)=}")
     try:

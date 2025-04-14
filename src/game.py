@@ -65,21 +65,20 @@ class Game:
     games: dict[str, "Game"] = {}
     _word_gen_func = get_random_word
 
+    # Множество айди чатов обсуждений, привязанных к постам каналов
+    chats_posts: dict[int, set] = {}
+
     @classmethod
     def get_game_chat_id(cls, message: Message | str) -> str:
         """Формирует chat_id для чата игры с учетом топиков и постов канала"""
         if isinstance(message, str):  # возвращает как есть
             return message
-        print(message)
         if message.is_topic_message:  # чат топика
             return f"{message.chat.id}-{message.message_thread_id}"
         if message.message_thread_id is not None:
-            print(f"{message.message_thread_id=}")
-            print(f"{message.reply_to_message.id=}")
-            print(f"{message.reply_to_message.from_user.id=}")
-            if (message.message_thread_id != message.reply_to_message.id) or (
-                message.message_thread_id == message.reply_to_message.id
-                and message.reply_to_message.from_user.id == 777000
+            if (
+                message.message_thread_id in cls.chats_posts.get(message.chat.id, set())
+                or message.reply_to_message.from_user.id == 777000
             ):
                 # чат поста канала
                 return f"{message.chat.id}-post-{message.message_thread_id}"
@@ -88,7 +87,6 @@ class Game:
     @classmethod
     async def get_game(cls, message: Message | str, start_game: bool = None):
         chat_id = cls.get_game_chat_id(message)
-        print(f"{chat_id=}")
         game = cls.games.get(chat_id)
         if (
             game is None and start_game
@@ -108,6 +106,7 @@ class Game:
         **kwargs,  # don't remove
     ):
         self.game_chat_id = game_chat_id  # этот айди используется как ключ в словаре games и в именовании файла .pkl
+        self.check_if_channel_post()
 
         # Информация о чате, где проходит игра
         self.chat_id = self.chat_title = self.topic_id = self.topic_name = (
@@ -133,6 +132,7 @@ class Game:
         self.players = set()  # Сколько игроков угадывали
 
     def define_chat_name(self, message: Message):
+        """Определяет имя чата, топика, разные айди для определения постов и топиков"""
         self.chat_title = message.chat.title
         self.chat_username = (
             "@" + message.chat.username if message.chat.username else None
@@ -145,11 +145,25 @@ class Game:
             self.topic_id = self.topic_name = None
         self.define_msg_kwargs(message)
 
+    def check_if_channel_post(self):
+        if "post" in self.game_chat_id:
+            # Добавляем айди поста в множество чата
+            chat_id, post_id = map(int, self.game_chat_id.split("-post-"))
+            chat_posts = self.__class__.chats_posts.get(chat_id, set())
+            chat_posts.add(post_id)
+            self.__class__.chats_posts[chat_id] = chat_posts
+
     def define_msg_kwargs(self, message: Message):
         if message.is_topic_message:
             self.msg_kwargs.update(message_thread_id=message.message_thread_id)
-        elif message.message_thread_id:
+        elif (
+            message.message_thread_id is not None
+            and message.message_thread_id
+            in self.__class__.chats_posts.get(message.chat.id, set())
+        ):
             self.msg_kwargs.update(reply_to_message_id=message.message_thread_id)
+        else:
+            self.msg_kwargs = {}
 
     async def save_game(self):
         """Сохранение состояния игры"""
@@ -178,7 +192,7 @@ class Game:
         await self.save_game()
 
     def define_new_word(self):
-        self.current_word = get_random_word(self)
+        self.current_word = self._word_gen_func()
         self.answers_set.clear()
 
     async def add_current_word_to_used(self, user: User):

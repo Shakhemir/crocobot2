@@ -9,7 +9,6 @@ with open(settings.WORDS_FILE, encoding="utf-8") as f:
 
 def get_random_word(game):
     """Возвращает случайное слово, исключая использованные"""
-
     if game.next_words:  # Если есть подкинутые админом слова
         word = game.next_words.pop(0)
         return word
