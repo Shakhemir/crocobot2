@@ -128,9 +128,7 @@ async def make_tester_game_stats(chat_id: str):
     chat_game = await get_game(chat_id)
     markup = InlineKeyboardMarkup()
     refresh_btn = InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh{chat_id}")
-    tg_chat_btn = InlineKeyboardButton(
-        "О чате...", callback_data=f"tg_chat_info{chat_id}"
-    )
+    tg_chat_btn = InlineKeyboardButton("…", callback_data=f"tg_chat_info{chat_id}")
     close_btn = InlineKeyboardButton("✖️", callback_data="close")
     markup.add(refresh_btn, tg_chat_btn, close_btn)
     active = "🟢" if chat_game.active else "🔴"
@@ -156,9 +154,14 @@ async def get_tg_chat_info(chat_id: str):
     chat = await bot.get_chat(chat_id)
     username = "@" + chat.username if chat.username else ""
     chat_description = "\n" + chat.description if chat.description else ""
-    pinned_message = (
-        "\nPinned: " + chat.pinned_message.content_type if chat.pinned_message else ""
-    )
+    pinned_message = ""
+    if chat.pinned_message:
+        pin = (
+            chat.pinned_message.text
+            if chat.pinned_message.content_type == "text"
+            else chat.pinned_message.content_type
+        )
+        pinned_message = "\nPinned: " + pin
     admins = await bot.get_chat_administrators(chat_id)
     creator = None
     for admin in admins:
@@ -167,8 +170,8 @@ async def get_tg_chat_info(chat_id: str):
     creator_username = "@" + creator.user.username if creator.user.username else ""
     members_count = await bot.get_chat_member_count(chat_id)
     text = (
-        f"{username} <b>{chat.title}</b>{chat_description}{pinned_message}\n"
-        f"{chat.invite_link}\n\n"
+        f"{username} <b>{chat.title}</b>{chat_description}\n"
+        f"{chat.invite_link}{pinned_message}\n\n"
         f"Creator: {creator_username} <code>{creator.user.full_name}</code>\n"
         f"Admins count: <code>{len(admins)}</code>\n"
         f"Members count: <code>{members_count}</code>\n"
