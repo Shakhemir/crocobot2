@@ -47,7 +47,14 @@ def make_active_chats_markup(offset=0, refresh_list=False):
         game = games.get(chat_id)
         if game is None:
             continue
-        prefix = "🟢" if game.active else "🔴"
+        if game.active:
+            prefix = "🟢"
+        elif game.used_words:
+            prefix = "🔴"
+        else:
+            prefix = "⚫️"
+        if game.chat_username:
+            prefix = "🔗 " + prefix
         chat_title = (
             f"{game.chat_title} / {game.topic_name}"
             if game.topic_id

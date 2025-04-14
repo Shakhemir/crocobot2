@@ -90,17 +90,18 @@ async def load_game(
         print("removing...")
         os.remove(settings.STATE_SAVE_DIR + chat_filename)
 
-    print(f"load_game: {filename=} {game_chat_id=} {chats_set_commands=}")
+    print(f"load_game: {filename=} {game_chat_id=} {len(chats_set_commands)=}")
     try:
         async with aiofiles.open(settings.STATE_SAVE_DIR + filename, "rb") as f:
             content = await f.read()
             state = pickle.loads(content)
             if (
                 not state["active"]
+                and state["game_chat_id"] != state["chat_id"]
                 and not state["exclusive_timer"]
                 and not state["used_words"]
             ):
-                # В чате не было игры, можно удалять
+                # В чате топика или поста не было игры, можно удалять
                 return remove_chat_file(filename)
 
             chat_id = state["chat_id"]
