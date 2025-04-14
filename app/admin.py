@@ -122,11 +122,17 @@ async def admins_messages(message: Message):
 
 
 async def make_tester_game_stats(chat_id: str):
+    """
+    Информация об игре чата.
+    """
     chat_game = await get_game(chat_id)
     markup = InlineKeyboardMarkup()
     refresh_btn = InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh{chat_id}")
+    tg_chat_btn = InlineKeyboardButton(
+        "О чате...", callback_data=f"tg_chat_info{chat_id}"
+    )
     close_btn = InlineKeyboardButton("✖️", callback_data="close")
-    markup.add(refresh_btn, close_btn)
+    markup.add(refresh_btn, tg_chat_btn, close_btn)
     active = "🟢" if chat_game.active else "🔴"
     chat_info = util.escape(str(chat_game))
     text = f"{active} <b>{chat_game.chat_title}</b>\n{chat_info}"
@@ -138,6 +144,43 @@ async def chat_info_callback_handler(call: CallbackQuery):
     chat_id = call.data.lstrip("chat_info")
     game_stats = await make_tester_game_stats(chat_id)
     await bot.send_message(call.message.chat.id, **game_stats)
+
+
+async def get_tg_chat_info(chat_id: str):
+    """
+    Информация о чате.
+    """
+    markup = InlineKeyboardMarkup()
+    close_btn = InlineKeyboardButton("✖️", callback_data="close")
+    markup.add(close_btn)
+    chat = await bot.get_chat(chat_id)
+    username = "@" + chat.username if chat.username else ""
+    chat_description = "\n" + chat.description if chat.description else ""
+    pinned_message = (
+        "\nPinned: " + chat.pinned_message.content_type if chat.pinned_message else ""
+    )
+    admins = await bot.get_chat_administrators(chat_id)
+    creator = None
+    for admin in admins:
+        if admin.status == "creator":
+            creator = admin
+    creator_username = "@" + creator.user.username if creator.user.username else ""
+    members_count = await bot.get_chat_member_count(chat_id)
+    text = (
+        f"{username} <b>{chat.title}</b>{chat_description}{pinned_message}\n"
+        f"{chat.invite_link}\n\n"
+        f"Creator: {creator_username} <code>{creator.user.full_name}</code>\n"
+        f"Admins count: <code>{len(admins)}</code>\n"
+        f"Members count: <code>{members_count}</code>\n"
+    )
+    return dict(text=text, reply_markup=markup, parse_mode="html")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("tg_chat_info"))
+async def tg_chat_info_callback_handler(call: CallbackQuery):
+    chat_id = call.data.lstrip("tg_chat_info")
+    tg_chat_info = await get_tg_chat_info(chat_id)
+    await bot.send_message(call.message.chat.id, **tg_chat_info)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("chats:"))
