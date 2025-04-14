@@ -97,7 +97,7 @@ async def load_game(
             state = pickle.loads(content)
             if (
                 not state["active"]
-                and game_chat_id != str(state["chat_id"])
+                and game_chat_id != str(state["chat_id"])  # Чат топика или поста
                 and not state["exclusive_timer"]
                 and not state["used_words"]
             ):
@@ -111,8 +111,10 @@ async def load_game(
                 elif chat_available == -1:  # Чат не доступен, скорее всего заблокирован
                     return remove_chat_file(filename)
 
-            # if chat_id in chats_set_commands:
-            #     if state["active"] or state["exclusive_timer"]:
+            if state["active"] and state["game_timer"] is None:
+                # Чиним не завершенные игры
+                state["active"] = False
+
             restored_game = await Game.load_state(
                 state,
                 game_chat_id=game_chat_id,
