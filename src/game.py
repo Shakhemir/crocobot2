@@ -1,8 +1,11 @@
 import asyncio
 import json
+import pickle
 import random
 import time
+import aiofiles
 from telebot.types import Message, User
+from app.words_generator import get_random_word
 from src.config import settings
 
 
@@ -59,17 +62,52 @@ class Timer:
 
 
 class Game:
+    games: dict[str, "Game"] = {}
+    _word_gen_func = get_random_word
+
+    @classmethod
+    def get_game_chat_id(cls, message: Message | str) -> str:
+        """Формирует chat_id для чата игры с учетом топиков и постов канала"""
+        if isinstance(message, str):  # возвращает как есть
+            return message
+        print(message)
+        if message.is_topic_message:  # чат топика
+            return f"{message.chat.id}-{message.message_thread_id}"
+        if message.message_thread_id is not None:
+            print(f"{message.message_thread_id=}")
+            print(f"{message.reply_to_message.id=}")
+            print(f"{message.reply_to_message.from_user.id=}")
+            if (message.message_thread_id != message.reply_to_message.id) or (
+                message.message_thread_id == message.reply_to_message.id
+                and message.reply_to_message.from_user.id == 777000
+            ):
+                # чат поста канала
+                return f"{message.chat.id}-post-{message.message_thread_id}"
+        return str(message.chat.id)  # обычный чат
+
+    @classmethod
+    async def get_game(cls, message: Message | str, start_game: bool = None):
+        chat_id = cls.get_game_chat_id(message)
+        print(f"{chat_id=}")
+        game = cls.games.get(chat_id)
+        if (
+            game is None and start_game
+        ):  # Если игра не найдена, а надо стартовать, то создаем
+            game = cls(chat_id, message)
+            cls.games[chat_id] = game
+            await cls.save_game(game)
+        elif start_game:
+            game.define_chat_name(message)
+            await game.save_game()
+        return game
+
     def __init__(
         self,
         game_chat_id: str,
         message: Message = None,
-        word_gen_func=None,
-        save_game_func=None,
-        **kwargs,
+        **kwargs,  # don't remove
     ):
         self.game_chat_id = game_chat_id  # этот айди используется как ключ в словаре games и в именовании файла .pkl
-        self._word_gen_func = word_gen_func  # Функция генерации случайного слова
-        self._save_game_func = save_game_func  # Функция сохранения состояния игры
 
         # Информация о чате, где проходит игра
         self.chat_id = self.chat_title = self.topic_id = self.topic_name = (
@@ -115,8 +153,10 @@ class Game:
 
     async def save_game(self):
         """Сохранение состояния игры"""
-        if self._save_game_func:
-            await self._save_game_func(self)
+        async with aiofiles.open(
+            f"{settings.STATE_SAVE_DIR}{self.game_chat_id}.pkl", "wb"
+        ) as f:
+            await f.write(pickle.dumps(self.save_state()))
 
     async def start_game(self, user, end_game_func):
         """Запуск игры"""
@@ -138,7 +178,7 @@ class Game:
         await self.save_game()
 
     def define_new_word(self):
-        self.current_word = self._word_gen_func(self)
+        self.current_word = get_random_word(self)
         self.answers_set.clear()
 
     async def add_current_word_to_used(self, user: User):
@@ -149,7 +189,7 @@ class Game:
         self.exclusive_user = user.id
         self.exclusive_user_name = user.full_name
         self.used_words.add(self.current_word)
-        if self.players is None:  # TODO временная проверка
+        if self.players is None:
             self.players = set()
         player = f"{user.id} {user.full_name}"
         if user.username:

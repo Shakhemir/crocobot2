@@ -6,10 +6,10 @@ from src.utils import (
     is_group_command,
     is_group_message,
     load_games,
-    get_game,
     check_user_answer,
     log_game,
 )
+from src.game import Game
 from app.statistics import get_global_stats, get_chat_stats, inc_user_fine
 import app.admin  # don't remove
 
@@ -27,7 +27,7 @@ async def start_command(message: Message):
 async def start_command(message: Message):
     """Старт игры"""
     chat_id = message.chat.id
-    chat_game = await get_game(message, start_game=True)
+    chat_game = await Game.get_game(message, start_game=True)
     if chat_game:  # Если игра уже активна
         return await bot.send_message(
             chat_id, **ui.get_game_already_started_message(), **chat_game.msg_kwargs
@@ -55,7 +55,7 @@ async def stop_command(message: Message):
         chat_member.status in ("creator", "administrator")
         or message.from_user.username == "GroupAnonymousBot"
     ):
-        chat_game = await get_game(message)
+        chat_game = await Game.get_game(message)
         if chat_game:
             await chat_game.end_game(end_game)
 
@@ -108,7 +108,7 @@ async def chat_messages(message: Message):
     chat_id = message.chat.id
     log = f"{chat_id} `{message.chat.title}` {message.from_user.full_name} :: {message.text}"
     print(log)
-    chat_game = await get_game(message)
+    chat_game = await Game.get_game(message)
 
     # Если игра не активна либо пишет ведущий, то выходим
     if not chat_game or message.from_user.id == chat_game.current_leader:
@@ -136,7 +136,7 @@ async def edited_chat_messages(message: Message):
 @bot.callback_query_handler(func=lambda call: True)
 async def callback_handler(call: CallbackQuery):
     chat_id = call.message.chat.id
-    chat_game = await get_game(call.message, start_game=True)
+    chat_game = await Game.get_game(call.message, start_game=True)
 
     if call.data == "want_to_lead" and not chat_game:
         if (
@@ -182,8 +182,7 @@ async def callback_handler(call: CallbackQuery):
 
 
 async def start_bot():
-    loaded_games = await load_games(end_game_func=end_game)
-    games.update(loaded_games)
+    await load_games(end_game_func=end_game)
     await bot.infinity_polling()
 
 

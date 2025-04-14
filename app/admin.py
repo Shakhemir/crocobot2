@@ -7,8 +7,9 @@ from telebot.types import (
 )
 from telebot.apihelper import ApiTelegramException
 from telebot import util
-from src.config import bot, games, settings
-from src.utils import is_admin_message, is_group_command, get_game
+from src.config import bot, settings
+from src.game import Game
+from src.utils import is_admin_message
 
 
 @bot.message_handler(commands=["chats"], func=is_admin_message)
@@ -45,7 +46,7 @@ def make_active_chats_markup(offset=0, refresh_list=False):
     if offset < 0:
         offset = 0
     for chat_id in sorted_chat_files[offset : offset + CHATS_IN_PAGE]:
-        game = games.get(chat_id)
+        game = Game.games.get(chat_id)
         if game is None:
             continue
         if game.active:
@@ -112,7 +113,7 @@ async def admins_messages(message: Message):
             start_index + len(find_word_idx) : end_index
         ]
         await bot.delete_message(message.chat.id, message.message_id)
-        game = games.get(chat_id)
+        game = Game.games.get(chat_id)
         game.next_words.append(message.text)
         game_stats = await make_tester_game_stats(chat_id)
         await bot.edit_message_text(
@@ -126,7 +127,7 @@ async def make_tester_game_stats(chat_id: str):
     """
     Информация об игре чата.
     """
-    chat_game = await get_game(chat_id)
+    chat_game = await Game.get_game(chat_id)
     markup = InlineKeyboardMarkup()
     refresh_btn = InlineKeyboardButton("🔄 Обновить", callback_data=f"refresh{chat_id}")
     tg_chat_btn = InlineKeyboardButton("…", callback_data=f"tg_chat_info{chat_id}")

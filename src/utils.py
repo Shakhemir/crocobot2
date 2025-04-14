@@ -8,7 +8,6 @@ from telebot.types import Message, User
 from src.game import Game
 from src.config import TESTERS_IDS, bot_username, games, sync_bot
 from src.config import logger, settings, set_chat_admin_commands
-from app.words_generator import get_random_word
 from app.statistics import inc_user_stat
 
 
@@ -33,40 +32,6 @@ def is_admin_message(message: Message):
         "supergroup",
     ]:
         return True
-
-
-async def save_game(game: Game):
-    async with aiofiles.open(
-        f"{settings.STATE_SAVE_DIR}{game.game_chat_id}.pkl", "wb"
-    ) as f:
-        await f.write(pickle.dumps(game.save_state()))
-
-
-def get_game_chat_id(message: Message | str) -> str:
-    """Формирует chat_id для чата игры с учетом топиков и постов канала"""
-    if isinstance(message, str):  # возвращает как есть
-        return message
-    if message.is_topic_message:  # чат топика
-        return f"{message.chat.id}-{message.message_thread_id}"
-    if message.message_thread_id is not None:
-        # чат поста канала
-        return f"{message.chat.id}-post-{message.message_thread_id}"
-    return str(message.chat.id)  # обычный чат
-
-
-async def get_game(message: Message | str, start_game: bool = None):
-    chat_id = get_game_chat_id(message)
-    game: Game = games.get(chat_id)
-    if (
-        game is None and start_game
-    ):  # Если игра не найдена, а надо стартовать, то создаем
-        game = Game(chat_id, message, get_random_word, save_game)
-        games[chat_id] = game
-        await save_game(game)
-    elif start_game:
-        game.define_chat_name(message)
-        await save_game(game)
-    return game
 
 
 def log_error(msg: str):
@@ -118,8 +83,6 @@ async def load_game(
             restored_game = await Game.load_state(
                 state,
                 game_chat_id=game_chat_id,
-                word_gen_func=get_random_word,
-                save_game_func=save_game,
                 **kwargs,
             )
             return restored_game
@@ -147,7 +110,7 @@ async def load_games(**kwargs):
             else:
                 blocked_chats += 1
     print(f"{chats_count=}, {blocked_chats=}")
-    return loaded_game_states
+    Game.games.update(loaded_game_states)
 
 
 async def check_user_answer(message: Message, game: Game):
