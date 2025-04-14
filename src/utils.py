@@ -97,7 +97,7 @@ async def load_game(
             state = pickle.loads(content)
             if (
                 not state["active"]
-                and state["game_chat_id"] != state["chat_id"]
+                and int(game_chat_id) != state["chat_id"]
                 and not state["exclusive_timer"]
                 and not state["used_words"]
             ):
