@@ -114,7 +114,7 @@ async def get_global_stats():
     sorted_stats = sorted(
         global_stats.items(), key=lambda x: x[1]["score"], reverse=True
     )
-    top_players = sorted_stats[:30]
+    top_players = sorted_stats[: settings.GLOBAL_STATS_SIZE]
     if not top_players:
         return dict(text="Пока нет глобальной статистики.")
     result_message = "🌐 🏆 <b>Глобальный ТОП игроков в крокодила 🐊</b>\n\n"
@@ -123,7 +123,9 @@ async def get_global_stats():
         score = data["score"]
         word = get_correct_word_form(score)
         result_message += f"{idx}. {user_name} — {score} {word}\n"
-    result_message += "\nНаш чат для игры в крокодил @game_public_chat. Присоединяйтесь к нам!"
+    result_message += (
+        "\nНаш чат для игры в крокодил @game_public_chat. Присоединяйтесь к нам!"
+    )
     return dict(text=result_message, parse_mode="HTML")
 
 
@@ -135,7 +137,7 @@ async def get_chat_stats(chat_id):
     if not chat_stats:
         return dict(text="Пока нет статистики для этого чата.")
     sorted_stats = sorted(chat_stats.items(), key=lambda x: x[1]["score"], reverse=True)
-    top_players = sorted_stats[:20]
+    top_players = sorted_stats[: settings.CHAT_STATS_SIZE]
     result_message = "🏆 <b>Топ игроков в крокодила 🐊 в этом чате</b>\n\n"
     for idx, (user_id_str, data) in enumerate(top_players, start=1):
         user_name = data["name"]
@@ -143,5 +145,7 @@ async def get_chat_stats(chat_id):
         score = data["score"] - fines
         word = get_correct_word_form(score)
         result_message += f"{idx}. {user_name} — {score} {word}\n"
-    result_message += "\nНаш чат для игры в крокодил @game_public_chat. Присоединяйтесь к нам!"
+    result_message += (
+        "\nНаш чат для игры в крокодил @game_public_chat. Присоединяйтесь к нам!"
+    )
     return dict(text=result_message, parse_mode="HTML")

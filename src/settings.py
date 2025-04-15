@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     EXCLUSIVE_TIME: int
     FAULT_SIZE: int  # Кол-во пропусков за который дается штраф
 
+    # --- Статистика ---
+    CHAT_STATS_SIZE: int
+    GLOBAL_STATS_SIZE: int
+
+    # --- Параметры админки ---
     CHAT_PAGE_SIZE: int
 
     # ChatGPT
