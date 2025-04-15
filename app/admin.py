@@ -7,6 +7,8 @@ from telebot.types import (
 )
 from telebot.apihelper import ApiTelegramException
 from telebot import util
+
+from app.statistics import load_stats
 from src.config import bot, settings
 from src.game import Game
 from src.utils import is_admin_message
@@ -38,7 +40,7 @@ def get_sorted_chat_files():
     sorted_chat_files = [f.stem for f in sorted_files]
 
 
-def make_active_chats_markup(offset=0, refresh_list=False):
+async def make_active_chats_markup(offset=0, refresh_list=False):
     if not sorted_chat_files or refresh_list:
         get_sorted_chat_files()
     chats_markup = InlineKeyboardMarkup()
@@ -90,9 +92,11 @@ def make_active_chats_markup(offset=0, refresh_list=False):
     chats_markup.add(*page_buttons, row_width=5)
     all_pages = (len(sorted_chat_files) - 1 + CHATS_IN_PAGE) // CHATS_IN_PAGE
     page = offset // CHATS_IN_PAGE + 1
+    global_stats = await load_stats(settings.GLOBAL_STATS_FILE)
     text = (
         f"<b>{get_chats_for_admins.__doc__}</b>\n\n"
         f"Всего чатов: <code>{len(sorted_chat_files)}</code>\n"
+        f"Всего игроков: <code>{len(global_stats)}</code>\n"
         f"Страница: <code>{page} / {all_pages}</code>"
     )
     return dict(text=text, parse_mode="html", reply_markup=chats_markup)
@@ -202,7 +206,7 @@ async def tg_chat_info_callback_handler(call: CallbackQuery):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("chats:"))
 async def chat_info_callback_handler(call: CallbackQuery):
     offset = int(call.data.split(":")[1])
-    kwargs = make_active_chats_markup(offset=offset)
+    kwargs = await make_active_chats_markup(offset=offset)
     await bot.edit_message_text(
         chat_id=call.message.chat.id,
         message_id=call.message.message_id,
@@ -221,7 +225,7 @@ async def close_callback_handler(call: CallbackQuery):
 async def chat_info_refresh_callback_handler(call: CallbackQuery):
     if "chats" in call.data:
         offset = int(call.data.split(":")[1])
-        kwargs = make_active_chats_markup(offset=offset, refresh_list=True)
+        kwargs = await make_active_chats_markup(offset=offset, refresh_list=True)
     else:
         chat_id = call.data.lstrip("refresh")
         kwargs = await make_tester_game_stats(chat_id)
