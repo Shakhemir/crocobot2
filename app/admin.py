@@ -17,7 +17,8 @@ from src.utils import is_admin_message
 @bot.message_handler(commands=["chats"], func=is_admin_message)
 async def get_chats_for_admins(message: Message):
     """Список активных чатов:"""
-    await bot.send_message(message.chat.id, **make_active_chats_markup())
+    kwargs = await make_active_chats_markup()
+    await bot.send_message(message.chat.id, **kwargs)
 
 
 sorted_chat_files = []  # Список чатов, сортированный по времени
