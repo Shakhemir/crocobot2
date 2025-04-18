@@ -1,5 +1,7 @@
 import asyncio
+from datetime import datetime
 from telebot.types import Message, CallbackQuery
+from telebot import util
 from src.config import bot, bot_title, games, TESTERS_IDS
 import src.user_interface as ui
 from src.utils import (
@@ -10,13 +12,18 @@ from src.utils import (
     log_game,
 )
 from src.game import Game
-from app.statistics import get_global_stats, get_chat_stats, inc_user_fine
+from app.statistics import (
+    get_global_stats,
+    get_chat_stats,
+    inc_user_fine,
+    clear_chat_stats,
+)
 import app.admin  # don't remove
 
 
 @bot.message_handler(
     commands=["start"],
-    func=lambda message: message.chat.type not in ["group", "supergroup"],
+    func=lambda message: message.chat.type == "private",
 )
 async def start_command(message: Message):
     """Старт в приватном чате"""
@@ -42,10 +49,10 @@ async def start_command(message: Message):
     )
 
 
-@bot.message_handler(commands=["stop"], func=is_group_command)
-async def stop_command(message: Message):
-    """Стоп игры – команда для администраторов чата"""
-    print("stop_command")
+@bot.message_handler(commands=["stop", "clear"], func=is_group_command)
+async def chat_admin_commands(message: Message):
+    """Команды для администраторов чата"""
+    print("chat_admin_commands")
     chat_id = message.chat.id
     print(chat_id)
     print(message.from_user.id, message.from_user.username, message.from_user.full_name)
@@ -56,8 +63,12 @@ async def stop_command(message: Message):
         or message.from_user.username == "GroupAnonymousBot"
     ):
         chat_game = await Game.get_game(message)
-        if chat_game:
-            await chat_game.end_game(end_game)
+        match util.extract_command(message.text):
+            case "stop":
+                if chat_game:
+                    await chat_game.end_game(end_game)
+            case "clear":
+                await bot.reply_to(message, **ui.get_clear_stats_message())
 
 
 async def start_game(game, chat_id, user):
@@ -138,7 +149,21 @@ async def callback_handler(call: CallbackQuery):
     chat_id = call.message.chat.id
     chat_game = await Game.get_game(call.message, start_game=True)
 
-    if call.data == "want_to_lead" and not chat_game:
+    if call.data == "clear_stats" and not chat_game:
+        if (
+            datetime.today().timestamp() - call.message.date > 1800
+        ):  # Возраст кнопки более 30 минут
+            await bot.edit_message_text(
+                "Кнопка устарела. Попробуйте вызвать команду очистки заново:\n/clear",
+                chat_id,
+                call.message.message_id,
+            )
+        else:
+            await clear_chat_stats(chat_id)
+            await bot.edit_message_text(
+                "Статистика игры очищена", chat_id, call.message.message_id
+            )
+    elif call.data == "want_to_lead" and not chat_game:
         if (
             chat_game.exclusive_timer
             and chat_game.exclusive_timer.time_remain > 0

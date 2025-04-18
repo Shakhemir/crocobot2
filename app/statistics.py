@@ -1,4 +1,5 @@
 import os.path
+from datetime import datetime
 import aiofiles
 import json
 from telebot.types import User
@@ -149,3 +150,10 @@ async def get_chat_stats(chat_id):
         "\nНаш чат для игры в крокодил @game_public_chat. Присоединяйтесь к нам!"
     )
     return dict(text=result_message, parse_mode="HTML")
+
+
+async def clear_chat_stats(chat_id):
+    """Очистка статистики"""
+    today_str = datetime.today().strftime(".%Y-%m-%d_%H%M")
+    chat_filename = get_chat_stats_filename(chat_id)
+    os.rename(chat_filename, chat_filename + today_str)

@@ -56,7 +56,7 @@ class MyTeleBot(AsyncTeleBot):
         allow_paid_broadcast: Optional[bool] = None,
     ) -> types.Message:
         try:
-            return await super().send_message(
+            msg = await super().send_message(
                 chat_id,
                 text,
                 parse_mode,
@@ -75,6 +75,7 @@ class MyTeleBot(AsyncTeleBot):
                 message_effect_id,
                 allow_paid_broadcast,
             )
+            return msg
         except asyncio_helper.ApiTelegramException as e:
             print(f"Error in send_message\n{e}\n{chat_id=}, {text=}\n")
 

@@ -44,6 +44,16 @@ change_word_btn = InlineKeyboardButton("🔄 Сменить", callback_data="cha
 view_word_btn = InlineKeyboardButton("🔎 Посмотреть", callback_data="view_word")
 leader_markup.add(change_word_btn, view_word_btn)
 
+# Кнопка для очистки статистики игры
+clear_stats_markup = InlineKeyboardMarkup()
+clear_btn = InlineKeyboardButton("Очистить", callback_data="clear_stats")
+clear_stats_markup.add(clear_btn)
+
+
+def get_clear_stats_message():
+    text = "Очистить статистику игры?"
+    return dict(text=text, reply_markup=clear_stats_markup)
+
 
 def get_correct_word_form(count):
     if count % 10 == 1 and count % 100 != 11:

@@ -74,6 +74,7 @@ async def set_chat_admin_commands(chat_id):
                 BotCommand("stop", "Остановить игру"),
                 BotCommand("stats", "Статистика по чату"),
                 BotCommand("stats_global", "Глобальная статистика"),
+                BotCommand("clear", "Очистка статистики чата"),
             ],
             scope=BotCommandScopeChatAdministrators(chat_id=chat_id),
         )
